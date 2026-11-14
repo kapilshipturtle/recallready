@@ -11,6 +11,13 @@ const ymd = (value) => {
   return m ? m[1] : '';
 };
 const unique = (list) => [...new Set(list.filter(Boolean))];
+// Shortens text at a word boundary and marks the cut with dots.
+const shorten = (text, max) => {
+  if (text.length <= max) return text;
+  const cut = text.slice(0, max + 1);
+  const space = cut.lastIndexOf(' ');
+  return `${(space > 0 ? cut.slice(0, space) : text.slice(0, max)).replace(/[\s,;:.]+$/, '')}...`;
+};
 
 function finish(notice) {
   const allText = [notice.title, notice.productText, notice.codeText].join(' ');
@@ -69,7 +76,7 @@ export function fromText(text, title) {
   return finish({
     source: 'Text',
     id: `TEXT:${createHash('sha256').update(body).digest('hex').slice(0, 12)}`,
-    title: clean(title) || body.slice(0, 120),
+    title: clean(title) || shorten(body, 120),
     firm: '',
     date: '',
     classification: '',

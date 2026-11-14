@@ -54,3 +54,14 @@ test('notice headline does not repeat a source the title already names', () => {
   assert.equal(noticeHeadline({ source: 'FDA food', title: 'Rustic Bread Mix' }), 'FDA food: Rustic Bread Mix');
   assert.equal(noticeHeadline({ source: 'Text', title: 'Supplier email' }), 'Pasted notice: Supplier email');
 });
+
+test('a long pasted notice gets a title cut at a word, marked with dots', () => {
+  const text = 'Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26J10A, because it may contain undeclared tree nuts (almonds).';
+  const { title } = fromText(text);
+  assert.ok(title.length <= 123, title);
+  assert.ok(title.endsWith('...'), title);
+  const kept = title.slice(0, -3);
+  assert.ok(text.startsWith(kept), title);
+  assert.equal(text[kept.length], ' ', `cut inside a word: ${title}`);
+  assert.equal(fromText('Lot 24B17 recalled').title, 'Lot 24B17 recalled');
+});
