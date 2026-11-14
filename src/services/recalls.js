@@ -9,12 +9,13 @@ import { clockStatus } from '../lib/clocks.js';
 import { docFromBlocks, textToAdf } from '../lib/adf.js';
 import { loadCatalog, loadObjects } from '../platform/assets.js';
 import * as jira from '../platform/jira.js';
-import { getSettings } from '../platform/settings.js';
+import { getSettings, claimOnce, deleteState } from '../platform/settings.js';
 
 export const CASE_LABEL = 'recallready-case';
 export const DRILL_LABEL = 'recallready-drill';
 export const STOP_LABEL = 'recallready-stop-sale';
 const BULK = 50; // Jira creates at most 50 work items per bulk call
+const LOT_CLAIM_MINUTES = 5; // longer than Jira search takes to show a new case
 
 export async function requireSettings() {
   const settings = await getSettings();
@@ -107,6 +108,28 @@ export async function startRecall({ notice, selections, drill = false, evidence 
   if (!fitsInProperty(stored)) {
     throw new Error(`This recall covers ${caseData.locations.length} locations, more than one case can hold. Start it for fewer products or lots at a time.`);
   }
+
+  // Jira search shows a new case only after a short delay, so each lot is also claimed for a few
+  // minutes. Two starts for the same lot at the same moment cannot both pass.
+  const lotClaims = [];
+  for (const lot of caseData.lots) {
+    const key = `rr-lot:${lot.key}`;
+    if (await claimOnce(key, { at: caseData.startedAt }, LOT_CLAIM_MINUTES)) {
+      lotClaims.push(key);
+    } else {
+      await Promise.all(lotClaims.map((k) => deleteState(k).catch(() => null)));
+      throw new Error(`A recall for lot ${lot.code} is being opened right now. Refresh the board in a minute.`);
+    }
+  }
+  try {
+    return await createCase({ settings, caseData, stored, drill, evidence, who });
+  } catch (error) {
+    await Promise.all(lotClaims.map((k) => deleteState(k).catch(() => null)));
+    throw error;
+  }
+}
+
+async function createCase({ settings, caseData, stored, drill, evidence, who }) {
 
   const project = await jira.getProject(settings.projectKey, who);
   const types = project.issueTypes || [];

@@ -27,9 +27,9 @@ export const deleteState = (key) => kvs.delete(key);
 
 // Takes a key only if nobody holds it yet (two radar runs can never both open the same case).
 // Returns false when the key already exists.
-export async function claimOnce(key, value) {
+export async function claimOnce(key, value, ttlMinutes) {
   try {
-    await kvs.set(key, value, { keyPolicy: 'FAIL_IF_EXISTS' });
+    await kvs.set(key, value, { keyPolicy: 'FAIL_IF_EXISTS', ...(ttlMinutes ? { ttl: { value: ttlMinutes, unit: 'MINUTES' } } : {}) });
     return true;
   } catch (error) {
     const existing = await kvs.get(key).catch(() => undefined);
