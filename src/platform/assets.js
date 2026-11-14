@@ -80,7 +80,8 @@ export async function ensureSchema(workspaceId) {
       // Types made by an earlier version used an icon id that does not exist; give them a real one.
       await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objecttype/${typeIds[typeName]}`, {
         method: 'PUT',
-        body: JSON.stringify({ name: typeName, iconId, objectSchemaId: schemaId }),
+        // Sending the type's own name is rejected as a duplicate (measured), so only the icon is sent.
+        body: JSON.stringify({ iconId, objectSchemaId: schemaId }),
       }).catch(orElse(null));
     }
     const attributes = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objecttype/${typeIds[typeName]}/attributes`);
