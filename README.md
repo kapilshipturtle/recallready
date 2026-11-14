@@ -30,7 +30,7 @@ Every match carries its evidence, for example "GTIN 02000000000237 appears in th
 | Confidence | Rule | What happens |
 |---|---|---|
 | High | A GTIN on the notice equals the product GTIN; or the brand is named and a model number equals the product SKU; or the brand is named, at least 60% of the product name's words appear and one of the product's lot codes is listed | Ticked on the board for one recall; the radar opens the case by itself |
-| Medium | The brand is named and at least 60% of the product name's words appear; or a GTIN or model matches but the brand is missing, or the notice lists lots and none of them is ours | Shown for review; never opened by itself |
+| Medium | The brand is named and at least 60% of the product name's words appear; or a model number equals the SKU but the brand is not named; or a match that would be High while the notice lists lots and none of them is this product's | Shown for review; never opened by itself |
 | Low | The brand is named but fewer of the product name's words appear | Shown for review; matches with no product word at all are folded under "Show brand-only matches" |
 
 GTINs are read even when printed with spaces or dashes and are checked with the GS1 check digit. Lot codes are read after "lot", "lots", "batch" or "batches", model numbers after "model", "item" or "SKU", and dates are not mistaken for lots.
@@ -71,11 +71,12 @@ You need a Jira site with Jira Service Management and Assets, and a Jira admin a
 1. Install RecallReady (install link: added when the production version is shared).
 2. Open Jira settings, Apps, RecallReady. Select Create catalog with sample data and allow access when Jira asks. Wait for "Sample data (done): 435 of 435 objects".
 3. Choose a project for recall cases (any project with a standard work type and a sub-task type), check the company name and select Save settings.
-4. Open Apps, RecallReady. Under Run a mock recall choose Larkmere Creamy Peanut Butter 16 oz and lot 26I01A, then Start mock recall. RecallReady opens a case with 7 stop-sale tasks and 188 units to pull.
-5. Open a stop-sale task, open the RecallReady panel and select Confirm stop sale. Confirm the other locations the same way.
-6. On the case, mark the customer notice and the regulator summary ready, then Close recall with closing record. The closing record says "Effectiveness 100%".
-7. Back on the board, paste into Check a notice: "Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26J10A, because it may contain undeclared tree nuts (almonds)." The first row is a High match on lot 26J10A.
-8. Select Ask Rovo, switch the agent to RecallReady and ask "Can we still sell Larkmere Creamy Peanut Butter 16 oz from lot 26J10A?"
+4. Open Apps, RecallReady. Paste into Check a notice: "Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26I01A, because of possible Salmonella contamination." and select Check against catalog. The first row is a High match on lot 26I01A with its reasons, and the similar crunchy product is only Medium. Select Start recall: RecallReady opens a case with 7 stop-sale tasks and 188 units to pull.
+5. Select Ask Rovo, switch the agent to RecallReady and ask "Can we still sell Larkmere Creamy Peanut Butter 16 oz from lot 26I01A?", then "Which locations haven't confirmed the stop sale for KEY-1 yet?" with the key of the case from step 4.
+6. Open a stop-sale task, open the RecallReady panel and select Confirm stop sale. Confirm the other locations the same way.
+7. On the case, mark the customer notice and the regulator summary ready, then select Close recall with closing record. The closing record says "Effectiveness 100%".
+8. Back on the board, under Run a mock recall choose Corvelle Baby Organic Oat Cereal 8 oz and select Start mock recall. RecallReady opens a mock recall with 9 count tasks: each asks the location to find and count the units, not to take them off sale.
+9. In Settings, select Scan now. The radar reads the FDA and CPSC recall notices of the last 30 days; the sample catalog is fictional, so it opens no cases.
 
 ## Rovo actions
 
