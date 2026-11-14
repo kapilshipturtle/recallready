@@ -64,7 +64,7 @@ const App = () => {
     const result = await invoke(fn, payload);
     setBusy('');
     setFlash(result.ok
-      ? { appearance: 'success', text: `Opened ${result.issueKey} with ${result.locations} stop-sale task${result.locations === 1 ? '' : 's'}.`, url: result.url }
+      ? { appearance: 'success', text: `Opened ${result.issueKey}${result.drill ? ' (mock recall)' : ''} with ${result.locations} ${result.drill ? 'count' : 'stop-sale'} task${result.locations === 1 ? '' : 's'}.`, url: result.url }
       : { appearance: 'error', text: result.message });
     if (result.ok) {
       await load();

@@ -2,9 +2,9 @@
 // close, list, and catalog lookups for the board, the panel, Rovo and MCP.
 import { fromText, noticeRef } from '../lib/notices.js';
 import { matchNotice } from '../lib/match.js';
-import { normalizeGtin, normalizeModel } from '../lib/ids.js';
 import { buildCase, markMilestone, caseSummary, closingRecord, caseTitle, stopSaleTitle, caseOpenedLine, storedCase, fitsInProperty, caseForRead, openCheck } from '../lib/case.js';
 import { overlappingCases } from '../lib/answers.js';
+import { findInCatalog } from '../lib/lookup.js';
 import { clockStatus } from '../lib/clocks.js';
 import { docFromBlocks, textToAdf } from '../lib/adf.js';
 import { loadCatalog, loadObjects } from '../platform/assets.js';
@@ -277,14 +277,7 @@ export async function listOpenRecalls(who = 'user') {
 export async function checkProduct(query) {
   const settings = await requireSettings();
   const catalog = await loadCatalog(settings.schemaIds);
-  const q = String(query || '').trim();
-  const gtin = normalizeGtin(q);
-  const model = normalizeModel(q);
-  const lots = catalog.lots.filter((l) => l.code.toUpperCase() === q.toUpperCase());
-  const products = catalog.products.filter((p) => (gtin && normalizeGtin(p.gtin) === gtin)
-    || (model.length >= 3 && normalizeModel(p.sku) === model)
-    || (q.length >= 3 && p.name.toLowerCase().includes(q.toLowerCase()))
-    || lots.some((l) => l.productKey === p.key));
+  const { products, lots } = findInCatalog(query, catalog);
   const productKeys = new Set(products.map((p) => p.key));
   const lotKeys = new Set(lots.map((l) => l.key));
   let open = [];

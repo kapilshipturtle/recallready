@@ -103,7 +103,7 @@ export function defineBoard(resolver) {
         reason: 'Recall test: this is a mock recall, no product is actually affected.',
       };
       const result = await startRecall({ notice, selections: [{ productKey: product.key, lotKeys: payload?.lotKeys || [] }], drill: true, who: 'user' });
-      return { ok: true, ...result, url: `${await baseUrl(context)}/browse/${result.issueKey}` };
+      return { ok: true, ...result, drill: true, url: `${await baseUrl(context)}/browse/${result.issueKey}` };
     } catch (error) {
       return resultFromError(error);
     }
