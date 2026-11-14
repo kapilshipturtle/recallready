@@ -1,0 +1,6 @@
+modules: {}
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+  id: ari:cloud:ecosystem::app/8892cc42-631f-4a62-a8a1-4188d116d47d
