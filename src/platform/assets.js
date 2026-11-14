@@ -1,6 +1,7 @@
 // Assets REST calls. Schema changes run as the admin (asUser); the app user is not an Assets
 // admin, so it gets 403 there. Reading and creating objects in that schema works asApp.
 import api, { route } from '@forge/api';
+import { isMissingAssets } from '../lib/errors.js';
 import { SCHEMA_NAME, SCHEMA_KEY, SCHEMA_SPEC, TYPE_ORDER, DEFAULT_TYPE_IDS, mapAqlObjects } from '../lib/assets-schema.js';
 
 export class AssetsError extends Error {
@@ -26,7 +27,7 @@ export async function getWorkspaceId(who = 'app') {
     const data = await call(who, route`/rest/servicedeskapi/assets/workspace`);
     return data?.values?.[0]?.workspaceId || null;
   } catch (error) {
-    if ([401, 403, 404].includes(error.status)) return null;
+    if (isMissingAssets(error)) return null;
     throw error;
   }
 }
