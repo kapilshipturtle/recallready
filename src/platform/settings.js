@@ -24,6 +24,7 @@ export async function saveSettings(patch) {
 export const getState = async (key, fallback = null) => (await kvs.get(key)) ?? fallback;
 export const setState = (key, value) => kvs.set(key, value);
 export const deleteState = (key) => kvs.delete(key);
+export const setStateFor = (key, value, ttlMinutes) => kvs.set(key, value, { ttl: { value: ttlMinutes, unit: 'MINUTES' } });
 
 // Takes a key only if nobody holds it yet (two radar runs can never both open the same case).
 // Returns false when the key already exists.

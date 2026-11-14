@@ -9,7 +9,7 @@ import { clockStatus } from '../lib/clocks.js';
 import { docFromBlocks, textToAdf } from '../lib/adf.js';
 import { loadCatalog, loadObjects } from '../platform/assets.js';
 import * as jira from '../platform/jira.js';
-import { getSettings, claimOnce, deleteState } from '../platform/settings.js';
+import { getSettings, getState, claimOnce, deleteState, setStateFor } from '../platform/settings.js';
 
 export const CASE_LABEL = 'recallready-case';
 export const DRILL_LABEL = 'recallready-drill';
@@ -112,21 +112,30 @@ export async function startRecall({ notice, selections, drill = false, evidence 
   // Jira search shows a new case only after a short delay, so each lot is also claimed for a few
   // minutes. Two starts for the same lot at the same moment cannot both pass.
   const lotClaims = [];
+  const release = () => Promise.all(lotClaims.map((k) => deleteState(k).catch(() => null)));
   for (const lot of caseData.lots) {
     const key = `rr-lot:${lot.key}`;
-    if (await claimOnce(key, { at: caseData.startedAt }, LOT_CLAIM_MINUTES)) {
+    if (await claimOnce(key, { at: caseData.startedAt, drill }, LOT_CLAIM_MINUTES)) {
       lotClaims.push(key);
-    } else {
-      await Promise.all(lotClaims.map((k) => deleteState(k).catch(() => null)));
-      throw new Error(`A recall for lot ${lot.code} is being opened right now. Refresh the board in a minute.`);
+      continue;
     }
+    const held = (await getState(key)) || {};
+    if (held.drill && !drill) continue; // a running test never holds up a real recall
+    await release();
+    throw new Error(held.caseKey
+      ? `Already under an open ${held.drill ? 'mock recall' : 'recall'}: ${held.caseKey} (lot ${lot.code}).`
+      : `A recall for lot ${lot.code} is being opened right now. Refresh the board in a minute.`);
   }
+  let result;
   try {
-    return await createCase({ settings, caseData, stored, drill, evidence, who });
+    result = await createCase({ settings, caseData, stored, drill, evidence, who });
   } catch (error) {
-    await Promise.all(lotClaims.map((k) => deleteState(k).catch(() => null)));
+    await release();
     throw error;
   }
+  // Until Jira search shows the new case, the claims say which case holds each lot.
+  await Promise.all(lotClaims.map((k) => setStateFor(k, { at: caseData.startedAt, drill, caseKey: result.issueKey }, LOT_CLAIM_MINUTES).catch(() => null)));
+  return result;
 }
 
 async function createCase({ settings, caseData, stored, drill, evidence, who }) {

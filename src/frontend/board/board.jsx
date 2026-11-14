@@ -66,7 +66,12 @@ const App = () => {
     setFlash(result.ok
       ? { appearance: 'success', text: `Opened ${result.issueKey} with ${result.locations} stop-sale task${result.locations === 1 ? '' : 's'}.`, url: result.url }
       : { appearance: 'error', text: result.message });
-    if (result.ok) await load();
+    if (result.ok) {
+      await load();
+      // Jira search lists a new case after a short delay; refresh again so it appears.
+      setTimeout(() => { load(); }, 6000);
+      setTimeout(() => { load(); }, 20000);
+    }
     return result;
   };
 
