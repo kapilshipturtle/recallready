@@ -2,3 +2,5 @@
 node_modules/
 .forge/
 *.log
+demo-video/.hyperframes/
+demo-video/renders/

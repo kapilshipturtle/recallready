@@ -1,0 +1,101 @@
+<template>
+  <style>
+    #s5-root { position: absolute; inset: 0; overflow: hidden; font-family: "Inter"; color: #172b4d; background: #ffffff; }
+    #s5-cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    #s5-v1, #s5-v2, #s5-v3, #s5-v4, #s5-v5 { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+    .s5-ring { position: absolute; border: 3px solid #c2410c; border-radius: 9px; box-shadow: 0 0 0 5px rgba(194,65,12,0.16); opacity: 0; }
+    #s5-rs { left: 352px; top: 554px; width: 112px; height: 44px; }
+    #s5-rf { left: 370px; top: 218px; width: 424px; height: 32px; }
+    #s5-rt { left: 350px; top: 260px; width: 884px; height: 294px; }
+    #s5-re { left: 668px; top: 350px; width: 58px; height: 218px; }
+    #s5-rp { left: 350px; top: 170px; width: 666px; height: 102px; }
+    .s5-chip { position: absolute; right: 56px; top: 44px; display: flex; align-items: center; gap: 14px; padding: 12px 26px 12px 14px; border-radius: 999px; background: #ffffff; box-shadow: 0 12px 34px rgba(23,43,77,0.18); font-size: 30px; font-weight: 800; letter-spacing: -0.01em; opacity: 0; }
+    .s5-chip svg { width: 44px; height: 44px; }
+    .s5-call { position: absolute; padding: 22px 30px; border-radius: 22px; background: #172b4d; color: #ffffff; font-size: 34px; font-weight: 800; letter-spacing: -0.01em; box-shadow: 0 22px 56px rgba(23,43,77,0.28); opacity: 0; }
+    .s5-call small { display: block; margin-top: 6px; font-size: 28px; font-weight: 600; color: #b3bac5; }
+    #s5-c1 { left: 1040px; top: 560px; }
+    #s5-c2 { left: 244px; top: 880px; }
+    #s5-c3 { left: 463px; top: 770px; }
+    #s5-c4 { left: 449px; top: 560px; }
+    #s5-cur { position: absolute; inset: 0; background: #f6f7fb; }
+  </style>
+  <div id="s5-root" data-composition-id="s5" data-width="1920" data-height="1080">
+    <div id="s5-cam" data-layout-allow-overflow>
+      <video id="s5-v1" class="clip" src="assets/footage/c5_start.mp4" muted playsinline data-start="0" data-duration="2.5" data-media-start="0.2" data-playback-rate="1" data-track-index="0"></video>
+      <video id="s5-v2" class="clip" src="assets/footage/c5_start.mp4" muted playsinline data-start="2.2" data-duration="2.1" data-media-start="13.6" data-playback-rate="1" data-track-index="1"></video>
+      <video id="s5-v3" class="clip" src="assets/footage/c5_case.mp4" muted playsinline data-start="4.0" data-duration="4.3" data-media-start="14.3" data-playback-rate="1" data-track-index="2"></video>
+      <video id="s5-v4" class="clip" src="assets/footage/c5_case.mp4" muted playsinline data-start="8.0" data-duration="3.0" data-media-start="21.0" data-playback-rate="0.7" data-track-index="3"></video>
+      <video id="s5-v5" class="clip" src="assets/footage/c5_case.mp4" muted playsinline data-start="10.7" data-duration="4.1" data-media-start="24.1" data-playback-rate="1" data-track-index="4"></video>
+      <div class="s5-ring" id="s5-rs" data-layout-ignore></div>
+      <div class="s5-ring" id="s5-rf" data-layout-ignore></div>
+      <div class="s5-ring" id="s5-rt" data-layout-ignore></div>
+      <div class="s5-ring" id="s5-re" data-layout-ignore></div>
+      <div class="s5-ring" id="s5-rp" data-layout-ignore></div>
+    </div>
+    <div class="s5-call" id="s5-c1">One click: Start recall</div>
+    <div class="s5-call" id="s5-c2">One stop-sale task for every location that holds the lot</div>
+    <div class="s5-call" id="s5-c3">The exact units to pull at each location</div>
+    <div class="s5-call" id="s5-c4">Response plan clocks start<small>Stop sale 4 h · notices 24 h · effectiveness 168 h</small></div>
+    <div class="s5-chip" id="s5-chip">
+      <svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#C2410C" /><path d="M16 25 L32 17 L48 25 L48 41 L32 49 L16 41 Z" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /><path d="M16 25 L32 33 L48 25 M32 33 L32 49" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /></svg>
+      Start a recall
+    </div>
+    <div id="s5-cur" data-layout-ignore></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const cam = (s, cx, cy) => {
+      let x = 960 - s * cx, y = 540 - s * cy;
+      x = Math.min(0, Math.max(1920 - 1920 * s, x));
+      y = Math.min(0, Math.max(1080 - 1080 * s, y));
+      return { scale: s, x: x, y: y };
+    };
+    const ringOn = (sel, at) => tl.fromTo(sel, { opacity: 0, scale: 1.06 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, at);
+    const ringOff = (sel, at) => tl.to(sel, { opacity: 0, duration: 0.25, ease: "power1.in" }, at);
+    const pop = (sel, at) => tl.fromTo(sel, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, at);
+    const drop = (sel, at) => tl.to(sel, { opacity: 0, y: -10, duration: 0.25, ease: "power1.in" }, at);
+    const fadeIn = (sel, at) => tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, at);
+
+    tl.fromTo("#s5-cur", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power1.out" }, 0);
+    pop("#s5-chip", 0.3);
+
+    // "Start the recall." (VO 0.0 + 0.5); the click lands at 1.0.
+    tl.fromTo("#s5-cam", cam(1.6, 900, 520), { ...cam(1.68, 880, 530), duration: 2.2, ease: "sine.inOut" }, 0);
+    ringOn("#s5-rs", 0.45);
+    pop("#s5-c1", 0.4);
+    drop("#s5-c1", 2.05);
+    ringOff("#s5-rs", 1.95);
+
+    // "Seconds later there is a case" (VO 1.72 / 2.62 + 0.5)
+    fadeIn("#s5-v2", 2.2);
+    tl.to("#s5-cam", { ...cam(1.5, 950, 300), duration: 0.6, ease: "power2.inOut" }, 2.2);
+    ringOn("#s5-rf", 2.75);
+    ringOff("#s5-rf", 3.85);
+
+    // "with one stop-sale task for every location that holds the lot" (VO 3.54 / 5.48 / 6.52 + 0.5)
+    fadeIn("#s5-v3", 4.0);
+    tl.to("#s5-cam", { ...cam(1.65, 790, 380), duration: 0.6, ease: "power2.inOut" }, 4.0);
+    ringOn("#s5-rt", 4.5);
+    pop("#s5-c2", 4.9);
+    drop("#s5-c2", 7.85);
+    ringOff("#s5-rt", 7.85);
+
+    // "and the exact units to pull at each." (VO 7.98 / 8.36 + 0.5): the panel's stop-sale table.
+    fadeIn("#s5-v4", 8.0);
+    tl.to("#s5-cam", { ...cam(1.75, 640, 470), duration: 0.6, ease: "power2.inOut" }, 8.0);
+    ringOn("#s5-re", 8.6);
+    pop("#s5-c3", 8.45);
+    drop("#s5-c3", 10.65);
+    ringOff("#s5-re", 10.65);
+
+    // "The clocks of your response plan start running." (VO 10.82 / 11.52 / 12.34 + 0.5)
+    fadeIn("#s5-v5", 10.7);
+    tl.to("#s5-cam", { ...cam(1.8, 640, 220), duration: 0.6, ease: "power2.inOut" }, 10.7);
+    ringOn("#s5-rp", 11.3);
+    pop("#s5-c4", 11.3);
+
+    tl.fromTo("#s5-cur", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.in", immediateRender: false }, 14.45);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s5"] = tl;
+  </script>
+</template>

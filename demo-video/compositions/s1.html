@@ -1,0 +1,163 @@
+<template>
+  <style>
+    #s1-root { position: absolute; inset: 0; overflow: hidden; font-family: "Inter"; color: #172b4d; }
+    #s1-bg { position: absolute; inset: 0; background: radial-gradient(1100px 700px at 10% 6%, #ffe8da 0%, rgba(255,232,218,0) 62%), radial-gradient(1000px 700px at 94% 94%, #e4edff 0%, rgba(228,237,255,0) 60%), #f6f7fb; }
+    .s1-h { position: absolute; left: 0; right: 0; top: 92px; text-align: center; font-size: 64px; font-weight: 800; letter-spacing: -0.025em; line-height: 1.12; opacity: 0; }
+    #s1-h3 { font-size: 60px; }
+    .s1-card { position: absolute; left: 200px; width: 680px; background: #ffffff; border-radius: 24px; box-shadow: 0 24px 60px rgba(23,43,77,0.13), 0 2px 0 rgba(23,43,77,0.04); display: flex; align-items: center; gap: 26px; padding: 0 30px; opacity: 0; }
+    .s1-k { font-size: 24px; font-weight: 700; color: #626f86; letter-spacing: 0.01em; }
+    .s1-v { font-size: 34px; font-weight: 800; letter-spacing: -0.015em; line-height: 1.15; }
+    #s1-call { top: 248px; height: 130px; }
+    #s1-phone { flex: 0 0 78px; height: 78px; border-radius: 50%; background: #c2410c; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 24px rgba(194,65,12,0.35); }
+    #s1-prod { top: 406px; height: 220px; }
+    #s1-risk { display: inline-block; margin-top: 14px; padding: 9px 20px; border-radius: 999px; background: #ffeceb; color: #ae2e24; font-size: 26px; font-weight: 800; opacity: 0; }
+    #s1-clock { top: 654px; height: 196px; }
+    #s1-elapsed { font-size: 54px; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+    .s1-q { position: absolute; left: 1000px; width: 720px; height: 92px; background: #ffffff; border-radius: 18px; box-shadow: 0 16px 40px rgba(23,43,77,0.10); border-left: 8px solid #c2410c; display: flex; align-items: center; gap: 18px; padding: 0 26px; font-size: 32px; font-weight: 800; letter-spacing: -0.015em; opacity: 0; }
+    .s1-qm { flex: 0 0 46px; height: 46px; border-radius: 50%; background: #fff1e8; color: #c2410c; font-size: 28px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+    #s1-q1 { top: 250px; }
+    #s1-q2 { top: 362px; }
+    #s1-q3 { top: 474px; }
+    #s1-q4 { top: 586px; }
+    #s1-q5 { top: 698px; }
+    #s1-sheet { position: absolute; left: 230px; top: 300px; width: 720px; height: 540px; background: #ffffff; border-radius: 18px; box-shadow: 0 30px 70px rgba(23,43,77,0.18); overflow: hidden; opacity: 0; }
+    #s1-sheet .bar { height: 60px; background: #eef1f5; display: flex; align-items: center; gap: 14px; padding: 0 22px; font-size: 23px; font-weight: 700; color: #44546f; border-bottom: 1px solid #dfe1e6; }
+    .s1-gico { width: 26px; height: 26px; border-radius: 6px; background: linear-gradient(#5e6c84 0 0) 50% 0/2px 100% no-repeat, linear-gradient(#5e6c84 0 0) 0 50%/100% 2px no-repeat, #c1c7d0; }
+    .s1-grid { display: grid; grid-template-columns: 34% 22% 22% 22%; }
+    .s1-grid div { height: 66px; border-right: 1px solid #e3e7ef; border-bottom: 1px solid #e3e7ef; display: flex; align-items: center; padding: 0 16px; font-size: 24px; font-weight: 600; color: #44546f; }
+    .s1-grid .hd { height: 56px; background: #f7f8fa; font-weight: 800; color: #172b4d; font-size: 22px; }
+    .s1-grid .ye { background: #fff7d6; }
+    .s1-qq { color: #ae2e24; font-weight: 900; }
+    #s1-mail { position: absolute; left: 1010px; top: 330px; width: 690px; height: 480px; background: #ffffff; border-radius: 18px; box-shadow: 0 30px 70px rgba(23,43,77,0.18); overflow: hidden; opacity: 0; }
+    #s1-mail .top { padding: 26px 28px 20px; border-bottom: 1px solid #e3e7ef; }
+    #s1-mail .lbl { font-size: 20px; font-weight: 800; color: #626f86; text-transform: uppercase; letter-spacing: 0.08em; display: flex; align-items: center; gap: 10px; }
+    #s1-mail .subj { margin-top: 10px; font-size: 30px; font-weight: 800; letter-spacing: -0.01em; display: flex; align-items: center; gap: 14px; }
+    #s1-mail .cnt { padding: 4px 14px; border-radius: 999px; background: #ffeceb; color: #ae2e24; font-size: 22px; font-weight: 800; }
+    .s1-msg { display: flex; align-items: center; gap: 18px; padding: 0 28px; height: 100px; border-bottom: 1px solid #eef1f5; }
+    .s1-av { flex: 0 0 52px; height: 52px; border-radius: 50%; color: #fff; font-size: 20px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .s1-msg .n { font-size: 20px; font-weight: 700; color: #626f86; }
+    .s1-msg .t { font-size: 27px; font-weight: 700; color: #172b4d; }
+    #s1-h1 { opacity: 1; }
+    #s1-cur { position: absolute; inset: 0; background: #f6f7fb; opacity: 0; }
+  </style>
+  <div id="s1-root" data-composition-id="s1" data-width="1920" data-height="1080">
+    <div id="s1-bg"></div>
+    <div id="s1-h1" class="s1-h">A supplier calls.</div>
+    <div id="s1-h2" class="s1-h">Now the clock is running.</div>
+    <div id="s1-h3" class="s1-h">Too often, the answers live in<br />spreadsheets and email threads.</div>
+
+    <div id="s1-call" class="s1-card">
+      <div id="s1-phone">
+        <svg viewBox="0 0 24 24" width="40" height="40"><path fill="#ffffff" d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1l-2.3 2.2z" /></svg>
+      </div>
+      <div><div class="s1-k">Incoming call</div><div class="s1-v">Quillbrook Farms, supplier</div></div>
+    </div>
+
+    <div id="s1-prod" class="s1-card">
+      <svg viewBox="0 0 120 150" width="112" height="140" style="flex: 0 0 112px" data-layout-ignore>
+        <rect x="24" y="6" width="72" height="22" rx="6" fill="#7c3f12" />
+        <rect x="14" y="26" width="92" height="118" rx="24" fill="#d9964f" />
+        <rect x="14" y="58" width="92" height="54" fill="#fff6ec" />
+        <text x="60" y="91" text-anchor="middle" font-family="Inter" font-size="17" font-weight="800" fill="#7c3f12">PEANUT</text>
+      </svg>
+      <div>
+        <div class="s1-k">On your shelves</div>
+        <div class="s1-v">Larkmere Creamy Peanut Butter 16 oz</div>
+        <div id="s1-risk">May contain Salmonella</div>
+      </div>
+    </div>
+
+    <div id="s1-clock" class="s1-card">
+      <svg viewBox="0 0 140 140" width="140" height="140" style="flex: 0 0 140px">
+        <circle cx="70" cy="70" r="58" fill="none" stroke="#e9ebf0" stroke-width="14" />
+        <g transform="rotate(-90 70 70)"><circle id="s1-arc" cx="70" cy="70" r="58" fill="none" stroke="#1f845a" stroke-width="14" stroke-linecap="round" stroke-dasharray="364.4" stroke-dashoffset="364.4" /></g>
+      </svg>
+      <div>
+        <div class="s1-k">Stop-sale clock</div>
+        <div id="s1-elapsed">0 h 00 min</div>
+        <div class="s1-k">Target: every location in 4 hours</div>
+      </div>
+    </div>
+
+    <div id="s1-q1" class="s1-q"><span class="s1-qm" data-layout-ignore>?</span>Which lots do you hold?</div>
+    <div id="s1-q2" class="s1-q"><span class="s1-qm" data-layout-ignore>?</span>Which stores, warehouse, online orders?</div>
+    <div id="s1-q3" class="s1-q"><span class="s1-qm" data-layout-ignore>?</span>Who has pulled it from sale?</div>
+    <div id="s1-q4" class="s1-q"><span class="s1-qm" data-layout-ignore>?</span>Which customers bought it?</div>
+    <div id="s1-q5" class="s1-q"><span class="s1-qm" data-layout-ignore>?</span>Can you prove it all afterwards?</div>
+
+    <div id="s1-sheet">
+      <div class="bar"><span class="s1-gico" data-layout-ignore></span>recall-tracker-FINAL-v3.xlsx</div>
+      <div class="s1-grid">
+        <div class="hd">Store</div><div class="hd">Lot</div><div class="hd">Pulled?</div><div class="hd">Who</div>
+        <div>Riverside</div><div>26I01A</div><div>yes</div><div>Sam</div>
+        <div>Old Town</div><div class="ye"><span class="s1-qq">?</span></div><div class="ye"></div><div class="ye"></div>
+        <div>Bayside</div><div>26I0lA</div><div>called</div><div class="ye"><span class="s1-qq">?</span></div>
+        <div>Maple Grove</div><div class="ye"></div><div>no reply</div><div class="ye"></div>
+        <div>Warehouse</div><div>26I01A</div><div class="ye"><span class="s1-qq">??</span></div><div>Priya</div>
+        <div>Online orders</div><div class="ye"><span class="s1-qq">?</span></div><div class="ye"></div><div class="ye"></div>
+      </div>
+    </div>
+
+    <div id="s1-mail">
+      <div class="top">
+        <div class="lbl" data-layout-ignore><svg viewBox="0 0 24 24" width="22" height="22"><path fill="none" stroke="#626f86" stroke-width="2.2" d="M3 6h18v12H3z M3 6l9 7 9-7" /></svg>Inbox</div>
+        <div class="subj">RE: RE: FW: Peanut butter recall <span class="cnt">17</span></div>
+      </div>
+      <div class="s1-msg"><span class="s1-av" style="background:#6e5dc6">SR</span><div><div class="n">Store, Riverside</div><div class="t">Did Bayside pull it yet?</div></div></div>
+      <div class="s1-msg"><span class="s1-av" style="background:#1d7afc">WH</span><div><div class="n">Warehouse</div><div class="t">Which lot was it again?</div></div></div>
+      <div class="s1-msg"><span class="s1-av" style="background:#c2410c">QA</span><div><div class="n">Quality team</div><div class="t">Who updated the sheet?</div></div></div>
+    </div>
+
+    <div id="s1-cur" data-layout-ignore></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const headIn = (sel, at) => tl.fromTo(sel, { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, at);
+    const headOut = (sel, at) => tl.to(sel, { opacity: 0, y: -14, duration: 0.3, ease: "power2.in" }, at);
+    const cardIn = (sel, at) => tl.fromTo(sel, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, at);
+
+    // "A supplier calls." (VO 0.0 + 0.5): the headline is on screen from the first frame (CSS).
+    cardIn("#s1-call", 0.4);
+    tl.fromTo("#s1-phone", { rotation: -12 }, { rotation: 12, duration: 0.09, ease: "sine.inOut", repeat: 9, yoyo: true }, 0.7);
+    tl.to("#s1-phone", { rotation: 0, duration: 0.15, ease: "power2.out" }, 1.62);
+
+    // "The peanut butter on your shelves may contain Salmonella." (VO 1.58 / 3.6 + 0.5)
+    cardIn("#s1-prod", 2.0);
+    tl.fromTo("#s1-risk", { opacity: 0, scale: 0.85 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 4.0);
+
+    // "Now the clock is running." (VO 4.88 + 0.5)
+    headOut("#s1-h1", 5.0);
+    headIn("#s1-h2", 5.3);
+    cardIn("#s1-clock", 5.35);
+    const elapsed = document.querySelector("#s1-elapsed");
+    const clock = { m: 0 };
+    const fmt = (m) => { const v = Math.round(m); return Math.floor(v / 60) + " h " + String(v % 60).padStart(2, "0") + " min"; };
+    tl.fromTo(clock, { m: 0 }, { m: 197, duration: 12.8, ease: "none", onUpdate: () => { elapsed.textContent = fmt(clock.m); } }, 5.6);
+    tl.fromTo("#s1-arc", { strokeDashoffset: 364.4 }, { strokeDashoffset: 66, duration: 12.8, ease: "none" }, 5.6);
+    tl.fromTo("#s1-arc", { stroke: "#1f845a" }, { stroke: "#d97008", duration: 1.2, ease: "none", immediateRender: false }, 10.4);
+    tl.fromTo("#s1-arc", { stroke: "#d97008" }, { stroke: "#c9372c", duration: 1.2, ease: "none", immediateRender: false }, 14.6);
+
+    // The questions, each as it is asked (VO 6.72, 8.36, 11.82, 13.96, 15.68 + 0.5)
+    const ask = (sel, at) => tl.fromTo(sel, { opacity: 0, x: 40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, at);
+    ask("#s1-q1", 7.1);
+    ask("#s1-q2", 8.75);
+    ask("#s1-q3", 12.2);
+    ask("#s1-q4", 14.35);
+    ask("#s1-q5", 16.05);
+
+    // "Too often, the answers live in spreadsheets and email threads." (VO 18.34 / 20.04 / 20.88 + 0.5)
+    tl.to(["#s1-call", "#s1-prod", "#s1-clock"], { opacity: 0, x: -40, duration: 0.4, ease: "power2.in", stagger: 0.05 }, 18.45);
+    tl.to(["#s1-q1", "#s1-q2", "#s1-q3", "#s1-q4", "#s1-q5"], { opacity: 0, x: 40, duration: 0.4, ease: "power2.in", stagger: 0.04 }, 18.45);
+    headOut("#s1-h2", 18.45);
+    headIn("#s1-h3", 18.85);
+    tl.fromTo("#s1-sheet", { opacity: 0, y: 50, rotation: -6 }, { opacity: 1, y: 0, rotation: -2.5, duration: 0.6, ease: "power3.out" }, 20.4);
+    tl.fromTo(".s1-qq", { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.3, ease: "back.out(2)", stagger: 0.1 }, 20.85);
+    tl.fromTo("#s1-mail", { opacity: 0, y: 50, rotation: 6 }, { opacity: 1, y: 0, rotation: 2, duration: 0.6, ease: "power3.out" }, 21.25);
+    tl.to("#s1-sheet", { y: -8, duration: 1.8, ease: "sine.inOut" }, 21.1);
+    tl.to("#s1-mail", { y: 8, duration: 1.4, ease: "sine.inOut" }, 21.9);
+
+    tl.fromTo("#s1-cur", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.in", immediateRender: false }, 23.05);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s1"] = tl;
+  </script>
+</template>

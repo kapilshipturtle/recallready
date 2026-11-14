@@ -1,0 +1,37 @@
+<template>
+  <style>
+    #s12-root { position: absolute; inset: 0; overflow: hidden; font-family: "Inter"; color: #172b4d; }
+    #s12-bg { position: absolute; inset: 0; background: radial-gradient(1200px 760px at 50% 40%, #ffe8da 0%, rgba(255,232,218,0) 62%), radial-gradient(900px 600px at 50% 115%, #e6eeff 0%, rgba(230,238,255,0) 60%), #f6f7fb; }
+    #s12-logo { position: absolute; left: 885px; top: 250px; width: 150px; height: 150px; border-radius: 34px; box-shadow: 0 26px 60px rgba(194,65,12,0.35); opacity: 0; }
+    #s12-word { position: absolute; left: 0; right: 0; top: 436px; text-align: center; font-size: 128px; font-weight: 900; letter-spacing: -0.045em; line-height: 1; opacity: 0; }
+    #s12-tag { position: absolute; left: 0; right: 0; top: 600px; text-align: center; font-size: 50px; font-weight: 700; letter-spacing: -0.02em; color: #c2410c; opacity: 0; }
+    #s12-foot { position: absolute; left: 0; right: 0; top: 740px; text-align: center; font-size: 30px; font-weight: 700; color: #44546f; opacity: 0; }
+    #s12-cur { position: absolute; inset: 0; background: #f6f7fb; }
+  </style>
+  <div id="s12-root" data-composition-id="s12" data-width="1920" data-height="1080">
+    <div id="s12-bg"></div>
+    <svg id="s12-logo" viewBox="0 0 64 64">
+      <rect width="64" height="64" rx="14" fill="#C2410C" />
+      <path d="M16 25 L32 17 L48 25 L48 41 L32 49 L16 41 Z" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" />
+      <path d="M16 25 L32 33 L48 25 M32 33 L32 49" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" />
+      <path d="M24 21 L40 29" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.85" />
+    </svg>
+    <div id="s12-word">RecallReady</div>
+    <div id="s12-tag">Every recall, tracked to the last unit.</div>
+    <div id="s12-foot">For Jira Service Management, Assets and Rovo · Built on Atlassian Forge</div>
+    <div id="s12-cur" data-layout-ignore></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    tl.fromTo("#s12-cur", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power1.out" }, 0);
+    // "RecallReady." (VO 0.0 + 0.5)
+    tl.fromTo("#s12-logo", { opacity: 0, scale: 0.6 }, { opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.8)" }, 0.2);
+    tl.fromTo("#s12-word", { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 0.45);
+    // "Every recall, tracked to the last unit." (VO 1.42 + 0.5)
+    tl.fromTo("#s12-tag", { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 1.85);
+    tl.fromTo("#s12-foot", { opacity: 0 }, { opacity: 1, duration: 0.5, ease: "none" }, 3.2);
+    tl.to("#s12-logo", { y: -6, duration: 2.6, ease: "sine.inOut" }, 3.4);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s12"] = tl;
+  </script>
+</template>

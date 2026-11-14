@@ -1,0 +1,177 @@
+<template>
+  <style>
+    #s6-root { position: absolute; inset: 0; overflow: hidden; font-family: "Inter"; color: #172b4d; background: #ffffff; }
+    #s6-cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    #s6-v1, #s6-v2, #s6-v3, #s6-v4 { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+    .s6-ring { position: absolute; border: 3px solid #c2410c; border-radius: 9px; box-shadow: 0 0 0 5px rgba(194,65,12,0.16); opacity: 0; }
+    #s6-ru { left: 350px; top: 538px; width: 156px; height: 44px; }
+    #s6-rn1 { left: 350px; top: 624px; width: 954px; height: 50px; }
+    #s6-rb { left: 350px; top: 508px; width: 954px; height: 44px; }
+    #s6-rs { left: 350px; top: 314px; width: 490px; height: 32px; }
+    #s6-rp { left: 350px; top: 174px; width: 664px; height: 96px; }
+    #s6-ro { left: 350px; top: 316px; width: 954px; height: 78px; }
+    #s6-rc { left: 350px; top: 400px; width: 954px; height: 112px; }
+    #s6-rr { left: 350px; top: 540px; width: 954px; height: 112px; }
+    .s6-chip { position: absolute; right: 56px; top: 44px; display: flex; align-items: center; gap: 14px; padding: 12px 26px 12px 14px; border-radius: 999px; background: #ffffff; box-shadow: 0 12px 34px rgba(23,43,77,0.18); font-size: 30px; font-weight: 800; letter-spacing: -0.01em; opacity: 0; }
+    .s6-chip svg { width: 44px; height: 44px; }
+    .s6-call { position: absolute; padding: 22px 30px; border-radius: 22px; background: #172b4d; color: #ffffff; font-size: 34px; font-weight: 800; letter-spacing: -0.01em; box-shadow: 0 22px 56px rgba(23,43,77,0.28); opacity: 0; }
+    .s6-call small { display: block; margin-top: 6px; font-size: 28px; font-weight: 600; color: #b3bac5; }
+    #s6-c1 { left: 1040px; top: 830px; }
+    #s6-c2 { left: 1040px; top: 830px; }
+    #s6-c3 { left: 460px; top: 880px; }
+    #s6-c4 { left: 300px; top: 920px; }
+    #s6-c5 { left: 300px; top: 920px; }
+    #s6-scrim { position: absolute; inset: 0; background: rgba(246,247,251,0.95); opacity: 0; }
+    #s6-dt { position: absolute; left: 0; right: 0; top: 150px; text-align: center; font-size: 56px; font-weight: 800; letter-spacing: -0.025em; opacity: 0; }
+    .s6-task { position: absolute; left: 230px; width: 600px; min-height: 200px; padding: 30px 34px; background: #ffffff; border-radius: 24px; box-shadow: 0 24px 60px rgba(23,43,77,0.13); border-left: 8px solid #1f845a; opacity: 0; }
+    #s6-t1 { top: 320px; }
+    #s6-t2 { top: 600px; }
+    .s6-task .k { font-size: 28px; font-weight: 700; color: #626f86; }
+    .s6-task .v { margin-top: 8px; font-size: 38px; font-weight: 800; letter-spacing: -0.015em; display: flex; align-items: center; gap: 16px; }
+    .s6-ok { width: 46px; height: 46px; border-radius: 50%; background: #1f845a; display: flex; align-items: center; justify-content: center; opacity: 0; }
+    .s6-task .tag { margin-top: 12px; display: inline-block; padding: 6px 16px; border-radius: 999px; background: #dcfff1; color: #216e4e; font-size: 28px; font-weight: 800; opacity: 0; }
+    .s6-link { position: absolute; height: 6px; border-radius: 3px; background: #9fadbc; transform-origin: 0 50%; opacity: 0; }
+    #s6-l1 { left: 840px; top: 417px; width: 270px; }
+    #s6-l2 { left: 840px; top: 697px; width: 270px; }
+    #s6-case { position: absolute; left: 1120px; top: 390px; width: 600px; height: 330px; padding: 34px 38px; background: #172b4d; color: #ffffff; border-radius: 28px; box-shadow: 0 30px 70px rgba(23,43,77,0.30); opacity: 0; }
+    #s6-case .k { font-size: 28px; font-weight: 700; color: #b3bac5; }
+    #s6-case .v { margin-top: 10px; font-size: 40px; font-weight: 800; letter-spacing: -0.015em; }
+    #s6-case .n { margin-top: 18px; font-size: 64px; font-weight: 900; letter-spacing: -0.03em; color: #7ee2b8; }
+    #s6-case .s { font-size: 28px; font-weight: 700; color: #b3bac5; }
+    #s6-end { position: absolute; left: 260px; top: 300px; width: 1400px; padding: 60px 70px; background: #ffffff; border-radius: 32px; box-shadow: 0 36px 90px rgba(23,43,77,0.18); text-align: center; opacity: 0; }
+    #s6-end .a { font-size: 56px; font-weight: 800; letter-spacing: -0.025em; }
+    #s6-end .b { margin-top: 26px; font-size: 76px; font-weight: 900; letter-spacing: -0.035em; color: #c2410c; opacity: 0; }
+    #s6-scrim2 { position: absolute; inset: 0; background: rgba(246,247,251,0.9); opacity: 0; }
+    #s6-cur { position: absolute; inset: 0; background: #f6f7fb; }
+  </style>
+  <div id="s6-root" data-composition-id="s6" data-width="1920" data-height="1080">
+    <div id="s6-cam" data-layout-allow-overflow>
+      <video id="s6-v1" class="clip" src="assets/footage/c6_confirm.mp4" muted playsinline data-start="0" data-duration="5.3" data-media-start="0.3" data-playback-rate="2.06" data-track-index="0"></video>
+      <video id="s6-v2" class="clip" src="assets/footage/c6_confirm.mp4" muted playsinline data-start="5.0" data-duration="7.5" data-media-start="14.6" data-playback-rate="0.5" data-track-index="1"></video>
+      <video id="s6-v3" class="clip" src="assets/footage/c6_progress.mp4" muted playsinline data-start="12.4" data-duration="4.2" data-media-start="0.3" data-playback-rate="0.85" data-track-index="2"></video>
+      <video id="s6-v4" class="clip" src="assets/footage/c6_progress.mp4" muted playsinline data-start="16.3" data-duration="12.0" data-media-start="9.2" data-playback-rate="0.48" data-track-index="3"></video>
+      <div class="s6-ring" id="s6-ru" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-rn1" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-rb" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-rs" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-rp" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-ro" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-rc" data-layout-ignore></div>
+      <div class="s6-ring" id="s6-rr" data-layout-ignore></div>
+    </div>
+    <div class="s6-call" id="s6-c1">The store manager confirms<small>Units pulled, with a note</small></div>
+    <div class="s6-call" id="s6-c2">Confirmed, and stored on this task</div>
+    <div class="s6-call" id="s6-c3">Progress and effectiveness<small>60 of 188 units, 31.9%</small></div>
+    <div class="s6-call" id="s6-c4">7 online orders to contact</div>
+    <div class="s6-call" id="s6-c5">A customer notice and a regulator summary, ready to copy</div>
+
+    <div id="s6-scrim" data-layout-ignore></div>
+    <div id="s6-dt">Two stores confirm at the same moment</div>
+    <div class="s6-task" id="s6-t1">
+      <div class="k">Old Town · stop-sale task</div>
+      <div class="v"><span class="s6-ok" id="s6-o1" data-layout-ignore><svg viewBox="0 0 24 24" width="28" height="28"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg></span>24 units pulled</div>
+      <div class="tag" id="s6-g1">stored on its own task</div>
+    </div>
+    <div class="s6-task" id="s6-t2">
+      <div class="k">Riverside · stop-sale task</div>
+      <div class="v"><span class="s6-ok" id="s6-o2" data-layout-ignore><svg viewBox="0 0 24 24" width="28" height="28"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" /></svg></span>36 units pulled</div>
+      <div class="tag" id="s6-g2">stored on its own task</div>
+    </div>
+    <div class="s6-link" id="s6-l1" data-layout-ignore></div>
+    <div class="s6-link" id="s6-l2" data-layout-ignore></div>
+    <div id="s6-case">
+      <div class="k">The case, REC-26</div>
+      <div class="v">2 of 7 locations confirmed</div>
+      <div class="n">60 of 188 units</div>
+      <div class="s">Both counted. Nothing is lost.</div>
+    </div>
+
+    <div id="s6-scrim2" data-layout-ignore></div>
+    <div id="s6-end">
+      <div class="a">RecallReady never sends anything itself.</div>
+      <div class="b" id="s6-end-b">People decide.</div>
+    </div>
+
+    <div class="s6-chip" id="s6-chip">
+      <svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#C2410C" /><path d="M16 25 L32 17 L48 25 L48 41 L32 49 L16 41 Z" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /><path d="M16 25 L32 33 L48 25 M32 33 L32 49" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /></svg>
+      Stop-sale confirmations
+    </div>
+    <div id="s6-cur" data-layout-ignore></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const cam = (s, cx, cy) => {
+      let x = 960 - s * cx, y = 540 - s * cy;
+      x = Math.min(0, Math.max(1920 - 1920 * s, x));
+      y = Math.min(0, Math.max(1080 - 1080 * s, y));
+      return { scale: s, x: x, y: y };
+    };
+    const ringOn = (sel, at) => tl.fromTo(sel, { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, at);
+    const ringOff = (sel, at) => tl.to(sel, { opacity: 0, duration: 0.25, ease: "power1.in" }, at);
+    const pop = (sel, at) => tl.fromTo(sel, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, at);
+    const drop = (sel, at) => tl.to(sel, { opacity: 0, y: -10, duration: 0.25, ease: "power1.in" }, at);
+    const fadeIn = (sel, at) => tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, at);
+
+    tl.fromTo("#s6-cur", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power1.out" }, 0);
+    pop("#s6-chip", 0.3);
+
+    // "Each store manager opens their task and confirms the units they pulled, with a note." (VO 0.0 / 2.32 / 4.24 + 0.5)
+    tl.fromTo("#s6-cam", cam(1.85, 720, 590), { ...cam(1.95, 700, 600), duration: 5.0, ease: "sine.inOut" }, 0);
+    pop("#s6-c1", 0.9);
+    ringOn("#s6-ru", 2.75);
+    ringOff("#s6-ru", 4.05);
+    ringOn("#s6-rn1", 4.1);
+    ringOff("#s6-rn1", 5.0);
+    drop("#s6-c1", 5.0);
+
+    // "Every confirmation is stored on its own task" (VO 5.2 / 6.5 + 0.5): the confirmation lands at 6.2.
+    fadeIn("#s6-v2", 5.0);
+    ringOn("#s6-rb", 6.25);
+    pop("#s6-c2", 6.3);
+    drop("#s6-c2", 7.75);
+    ringOff("#s6-rb", 7.75);
+
+    // "so two stores can confirm at the same moment and nothing is lost." (VO 8.32 / 9.96 / 10.8 + 0.5)
+    tl.fromTo("#s6-scrim", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 7.75);
+    pop("#s6-dt", 7.85);
+    tl.fromTo("#s6-t1", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 8.05);
+    tl.fromTo("#s6-t2", { opacity: 0, x: -40 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 8.2);
+    tl.fromTo(["#s6-o1", "#s6-o2"], { opacity: 0, scale: 0.5 }, { opacity: 1, scale: 1, duration: 0.35, ease: "back.out(2.4)" }, 10.3);
+    tl.fromTo(["#s6-g1", "#s6-g2"], { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 10.55);
+    tl.fromTo(["#s6-l1", "#s6-l2"], { opacity: 1, scaleX: 0 }, { opacity: 1, scaleX: 1, duration: 0.4, ease: "power2.out" }, 10.7);
+    tl.fromTo("#s6-case", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 10.9);
+    tl.to(["#s6-scrim", "#s6-dt", "#s6-t1", "#s6-t2", "#s6-l1", "#s6-l2", "#s6-case"], { opacity: 0, duration: 0.3, ease: "power1.in" }, 12.45);
+
+    // "On the case, the team sees progress, effectiveness" (VO 12.42 / 13.82 / 14.88 + 0.5)
+    tl.set("#s6-cam", cam(1.7, 650, 450), 12.4);
+    tl.to("#s6-cam", { ...cam(1.76, 640, 440), duration: 3.8, ease: "sine.inOut" }, 12.45);
+    ringOn("#s6-rs", 13.8);
+    pop("#s6-c3", 13.9);
+    drop("#s6-c3", 16.2);
+    ringOff("#s6-rs", 16.2);
+
+    // "and the clocks, plus the online orders to contact, with a customer notice and a regulator summary ready to copy." (VO 15.82 / 16.9 / 19.34 / 20.54 + 0.5)
+    tl.set("#s6-cam", cam(1.5, 760, 430), 16.3);
+    ringOn("#s6-rp", 16.4);
+    ringOff("#s6-rp", 17.3);
+    ringOn("#s6-ro", 17.35);
+    pop("#s6-c4", 17.45);
+    drop("#s6-c4", 19.6);
+    ringOff("#s6-ro", 19.6);
+    ringOn("#s6-rc", 19.75);
+    pop("#s6-c5", 19.85);
+    ringOn("#s6-rr", 20.95);
+    drop("#s6-c5", 23.05);
+    ringOff("#s6-rc", 23.05);
+    ringOff("#s6-rr", 23.05);
+
+    // "RecallReady never sends anything itself. People decide." (VO 23.32 / 25.8 + 0.5)
+    tl.fromTo("#s6-scrim2", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 23.2);
+    tl.fromTo("#s6-end", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: "power3.out" }, 23.6);
+    tl.fromTo("#s6-end-b", { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.45, ease: "power3.out" }, 26.2);
+
+    tl.fromTo("#s6-cur", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.in", immediateRender: false }, 27.95);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s6"] = tl;
+  </script>
+</template>

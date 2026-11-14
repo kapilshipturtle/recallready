@@ -1,0 +1,151 @@
+<template>
+  <style>
+    #s9-root { position: absolute; inset: 0; overflow: hidden; font-family: "Inter"; color: #172b4d; background: #f6f7fb; }
+    #s9-bg { position: absolute; inset: 0; background: radial-gradient(1100px 760px at 50% 30%, #ffece0 0%, rgba(255,236,224,0) 62%), #f6f7fb; }
+    #s9-radar { position: absolute; left: 710px; top: 110px; width: 500px; height: 500px; opacity: 0; }
+    #s9-sweep { position: absolute; left: 10px; top: 10px; width: 480px; height: 480px; border-radius: 50%; background: conic-gradient(from 0deg, rgba(194,65,12,0) 0deg, rgba(194,65,12,0) 270deg, rgba(194,65,12,0.42) 360deg); }
+    .s9-blip { position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #c2410c; box-shadow: 0 0 0 6px rgba(194,65,12,0.18); opacity: 0; }
+    #s9-icon { position: absolute; left: 218px; top: 218px; width: 64px; height: 64px; }
+    #s9-head { position: absolute; left: 0; right: 0; top: 690px; text-align: center; font-size: 60px; font-weight: 800; letter-spacing: -0.025em; opacity: 0; }
+    #s9-cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+    #s9-v1, #s9-v2, #s9-v3 { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; object-fit: contain; }
+    .s9-ring { position: absolute; border: 3px solid #c2410c; border-radius: 9px; box-shadow: 0 0 0 5px rgba(194,65,12,0.16); opacity: 0; }
+    #s9-rf { left: 356px; top: 828px; width: 304px; height: 114px; }
+    #s9-rc { left: 356px; top: 948px; width: 276px; height: 34px; }
+    #s9-rs { left: 362px; top: 994px; width: 86px; height: 28px; }
+    #s9-rl { left: 354px; top: 1000px; width: 584px; height: 28px; }
+    .s9-chip { position: absolute; right: 56px; top: 44px; display: flex; align-items: center; gap: 14px; padding: 12px 26px 12px 14px; border-radius: 999px; background: #ffffff; box-shadow: 0 12px 34px rgba(23,43,77,0.18); font-size: 30px; font-weight: 800; letter-spacing: -0.01em; opacity: 0; }
+    .s9-chip svg { width: 44px; height: 44px; }
+    .s9-call { position: absolute; left: 1330px; width: 520px; padding: 22px 28px; border-radius: 22px; background: #172b4d; color: #ffffff; font-size: 32px; font-weight: 800; letter-spacing: -0.01em; box-shadow: 0 22px 56px rgba(23,43,77,0.28); opacity: 0; }
+    .s9-call small { display: block; margin-top: 6px; font-size: 28px; font-weight: 600; color: #b3bac5; }
+    #s9-c1 { top: 250px; }
+    #s9-c2 { top: 410px; }
+    #s9-c3 { top: 600px; }
+    #s9-count { position: absolute; left: 1330px; top: 440px; width: 540px; padding: 34px 36px; border-radius: 26px; background: #ffffff; box-shadow: 0 26px 64px rgba(23,43,77,0.18); border: 1px solid #e3e7ef; opacity: 0; }
+    #s9-num { font-size: 120px; font-weight: 900; letter-spacing: -0.04em; color: #c2410c; line-height: 1; font-variant-numeric: tabular-nums; }
+    #s9-count .l { margin-top: 10px; font-size: 32px; font-weight: 800; }
+    #s9-count .s { margin-top: 8px; font-size: 28px; font-weight: 700; color: #44546f; opacity: 0; }
+    #s9-scrim { position: absolute; inset: 0; background: rgba(246,247,251,0.96); opacity: 0; }
+    #s9-src { position: absolute; left: 150px; top: 430px; width: 470px; height: 220px; padding: 32px 34px; background: #ffffff; border-radius: 26px; box-shadow: 0 24px 60px rgba(23,43,77,0.13); opacity: 0; }
+    #s9-src .k { font-size: 28px; font-weight: 700; color: #626f86; }
+    #s9-src .v { margin-top: 10px; font-size: 40px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.12; }
+    #s9-lines { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+    .s9-out { position: absolute; left: 1080px; width: 690px; height: 200px; padding: 30px 34px; background: #ffffff; border-radius: 26px; box-shadow: 0 24px 60px rgba(23,43,77,0.13); opacity: 0; }
+    #s9-o1 { top: 250px; border-left: 10px solid #1f845a; }
+    #s9-o2 { top: 630px; border-left: 10px solid #d97008; }
+    .s9-out .k { display: inline-block; padding: 6px 16px; border-radius: 999px; font-size: 28px; font-weight: 800; }
+    .s9-out .v { margin-top: 14px; font-size: 44px; font-weight: 800; letter-spacing: -0.02em; }
+    #s9-credit { position: absolute; left: 56px; top: 1006px; padding: 8px 18px; border-radius: 999px; background: rgba(255,255,255,0.92); font-size: 24px; font-weight: 600; color: #44546f; opacity: 0; }
+    #s9-cur { position: absolute; inset: 0; background: #f6f7fb; }
+  </style>
+  <div id="s9-root" data-composition-id="s9" data-width="1920" data-height="1080">
+    <div id="s9-bg"></div>
+    <div id="s9-radar" data-layout-allow-overflow>
+      <svg viewBox="0 0 500 500" width="500" height="500" style="position:absolute;left:0;top:0">
+        <circle cx="250" cy="250" r="240" fill="#ffffff" stroke="#dfe1e6" stroke-width="3" />
+        <circle cx="250" cy="250" r="160" fill="none" stroke="#dfe1e6" stroke-width="3" />
+        <circle cx="250" cy="250" r="80" fill="none" stroke="#dfe1e6" stroke-width="3" />
+        <path d="M250 10 V490 M10 250 H490" stroke="#eef1f5" stroke-width="3" />
+      </svg>
+      <div id="s9-sweep" data-layout-ignore></div>
+      <div class="s9-blip" id="s9-b1" style="left:330px;top:120px"></div>
+      <div class="s9-blip" id="s9-b2" style="left:380px;top:300px"></div>
+      <div class="s9-blip" id="s9-b3" style="left:150px;top:350px"></div>
+      <div class="s9-blip" id="s9-b4" style="left:110px;top:160px"></div>
+      <svg id="s9-icon" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#C2410C" /><path d="M16 25 L32 17 L48 25 L48 41 L32 49 L16 41 Z" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /><path d="M16 25 L32 33 L48 25 M32 33 L32 49" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /></svg>
+    </div>
+    <div id="s9-head">RecallReady doesn't wait for the email.</div>
+
+    <div id="s9-cam" data-layout-allow-overflow>
+      <video id="s9-v1" class="clip" src="assets/footage/c8_radar.mp4" muted playsinline data-start="3.6" data-duration="6.3" data-media-start="0.16" data-playback-rate="0.3" data-track-index="0"></video>
+      <video id="s9-v2" class="clip" src="assets/footage/c8_radar.mp4" muted playsinline data-start="9.6" data-duration="6.0" data-media-start="15.0" data-playback-rate="1.1" data-track-index="1"></video>
+      <video id="s9-v3" class="clip" src="assets/footage/c8_radar.mp4" muted playsinline data-start="15.4" data-duration="6.9" data-media-start="21.0" data-playback-rate="0.1" data-track-index="2"></video>
+      <div class="s9-ring" id="s9-rf" data-layout-ignore></div>
+      <div class="s9-ring" id="s9-rc" data-layout-ignore></div>
+      <div class="s9-ring" id="s9-rs" data-layout-ignore></div>
+      <div class="s9-ring" id="s9-rl" data-layout-ignore></div>
+    </div>
+    <div class="s9-call" id="s9-c1">Every hour, by itself</div>
+    <div class="s9-call" id="s9-c2">FDA enforcement reports<small>Food, drugs and medical devices</small></div>
+    <div class="s9-call" id="s9-c3">CPSC recalls<small>Consumer products</small></div>
+    <div id="s9-count"><div id="s9-num">0</div><div class="l">public recall notices checked</div><div class="s" id="s9-days">from the last 30 days</div></div>
+
+    <div id="s9-scrim" data-layout-ignore></div>
+    <div id="s9-src"><div class="k">Public recall notice</div><div class="v">FDA or CPSC, checked against the catalog</div></div>
+    <svg id="s9-lines" viewBox="0 0 1920 1080" data-layout-ignore>
+      <path id="s9-p1" d="M620 540 C 830 540, 860 350, 1080 350" fill="none" stroke="#1f845a" stroke-width="7" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1.2" stroke-dashoffset="1.1" />
+      <path id="s9-p2" d="M620 540 C 830 540, 860 730, 1080 730" fill="none" stroke="#d97008" stroke-width="7" stroke-linecap="round" pathLength="1" stroke-dasharray="1 1.2" stroke-dashoffset="1.1" />
+    </svg>
+    <div class="s9-out" id="s9-o1"><span class="k" style="background:#dcfff1;color:#216e4e">High match</span><div class="v">A case opens by itself</div></div>
+    <div class="s9-out" id="s9-o2"><span class="k" style="background:#fff4e5;color:#974f0c">Medium or Low match</span><div class="v">Waits for a person to review</div></div>
+
+    <div id="s9-credit">Recall data: U.S. FDA (open.fda.gov) and the U.S. CPSC Recalls API</div>
+    <div class="s9-chip" id="s9-chip">
+      <svg viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#C2410C" /><path d="M16 25 L32 17 L48 25 L48 41 L32 49 L16 41 Z" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /><path d="M16 25 L32 33 L48 25 M32 33 L32 49" fill="none" stroke="#FFFFFF" stroke-width="3.6" stroke-linejoin="round" /></svg>
+      Recall radar
+    </div>
+    <div id="s9-cur" data-layout-ignore></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    const cam = (s, cx, cy) => {
+      let x = 960 - s * cx, y = 540 - s * cy;
+      x = Math.min(0, Math.max(1920 - 1920 * s, x));
+      y = Math.min(0, Math.max(1080 - 1080 * s, y));
+      return { scale: s, x: x, y: y };
+    };
+    const ringOn = (sel, at) => tl.fromTo(sel, { opacity: 0, scale: 1.05 }, { opacity: 1, scale: 1, duration: 0.35, ease: "power2.out" }, at);
+    const ringOff = (sel, at) => tl.to(sel, { opacity: 0, duration: 0.25, ease: "power1.in" }, at);
+    const pop = (sel, at) => tl.fromTo(sel, { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.4, ease: "power3.out" }, at);
+    const drop = (sel, at) => tl.to(sel, { opacity: 0, y: -10, duration: 0.25, ease: "power1.in" }, at);
+
+    tl.fromTo("#s9-cur", { opacity: 1 }, { opacity: 0, duration: 0.3, ease: "power1.out" }, 0);
+    pop("#s9-chip", 0.3);
+
+    // "RecallReady doesn't wait for the email, either." (VO 0.0 + 0.5): the radar sweeps.
+    tl.fromTo("#s9-radar", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.5, ease: "power3.out" }, 0.1);
+    tl.fromTo("#s9-sweep", { rotation: 0 }, { rotation: 630, duration: 3.6, ease: "none" }, 0.1);
+    tl.fromTo(".s9-blip", { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: 0.25, ease: "back.out(3)", stagger: 0.55 }, 0.9);
+    pop("#s9-head", 0.55);
+    tl.to(["#s9-radar", "#s9-head"], { opacity: 0, duration: 0.3, ease: "power1.in" }, 3.45);
+
+    // "Every hour, the recall radar reads new FDA and CPSC recall notices." (VO 3.3 / 5.5 / 6.78 + 0.5)
+    tl.fromTo("#s9-v1", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "none" }, 3.6);
+    tl.fromTo("#s9-cam", cam(1.8, 760, 900), { ...cam(1.84, 750, 905), duration: 6.0, ease: "sine.inOut" }, 3.6);
+    pop("#s9-credit", 3.8);
+    pop("#s9-c1", 3.9);
+    ringOn("#s9-rf", 5.95);
+    pop("#s9-c2", 6.0);
+    ringOn("#s9-rc", 7.25);
+    pop("#s9-c3", 7.3);
+    tl.to(["#s9-c1", "#s9-c2", "#s9-c3"], { opacity: 0, y: -10, duration: 0.25, ease: "power1.in", stagger: 0.04 }, 9.0);
+    ringOff("#s9-rf", 9.0);
+    ringOff("#s9-rc", 9.0);
+    ringOn("#s9-rs", 9.05);
+    ringOff("#s9-rs", 9.75);
+
+    // "Its first scan on our site read 385 notices from the last 30 days." (VO 9.24 / 10.98 / 13.9 + 0.5)
+    tl.fromTo("#s9-v2", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "none" }, 9.6);
+    tl.to("#s9-cam", { ...cam(1.8, 760, 900), duration: 0.5, ease: "power2.inOut" }, 9.6);
+    pop("#s9-count", 10.9);
+    const num = document.querySelector("#s9-num");
+    const n = { v: 0 };
+    tl.fromTo(n, { v: 0 }, { v: 385, duration: 1.4, ease: "power2.out", onUpdate: () => { num.textContent = String(Math.round(n.v)); } }, 11.2);
+    ringOn("#s9-rl", 11.7);
+    tl.fromTo("#s9-days", { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "none" }, 13.85);
+
+    // "A High match opens a case by itself. Anything weaker waits for a person to review." (VO 15.54 / 18.7 + 0.5)
+    tl.fromTo("#s9-scrim", { opacity: 0 }, { opacity: 1, duration: 0.4, ease: "power1.out" }, 15.4);
+    drop("#s9-count", 15.4);
+    ringOff("#s9-rl", 15.4);
+    tl.fromTo("#s9-src", { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 15.6);
+    tl.fromTo("#s9-p1", { strokeDashoffset: 1.1 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, 16.0);
+    tl.fromTo("#s9-o1", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 16.4);
+    tl.fromTo("#s9-p2", { strokeDashoffset: 1.1 }, { strokeDashoffset: 0, duration: 0.5, ease: "power2.out" }, 19.1);
+    tl.fromTo("#s9-o2", { opacity: 0, x: 30 }, { opacity: 1, x: 0, duration: 0.45, ease: "power3.out" }, 19.45);
+
+    tl.fromTo("#s9-cur", { opacity: 0 }, { opacity: 1, duration: 0.3, ease: "power1.in", immediateRender: false }, 21.95);
+    window.__timelines = window.__timelines || {};
+    window.__timelines["s9"] = tl;
+  </script>
+</template>
