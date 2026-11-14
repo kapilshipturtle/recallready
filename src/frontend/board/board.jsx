@@ -42,6 +42,8 @@ const App = () => {
   const [drill, setDrill] = useState({ product: null, lots: [] });
   const [busy, setBusy] = useState('');
   const [flash, setFlash] = useState(null);
+  // Brand-only (Low) matches stay collapsed until asked for, as the design says.
+  const [showLow, setShowLow] = useState({ check: false, queue: false });
 
   const load = async () => {
     const result = await invoke('getBoard');
@@ -67,6 +69,11 @@ const App = () => {
   if (!board) return <Spinner label="Loading recall board" />;
   if (!board.ok) return <SectionMessage appearance="error" title="The board could not load"><Text>{board.message}</Text></SectionMessage>;
 
+  const checkShown = (check?.matches || []).filter((m) => showLow.check || m.confidence !== 'Low');
+  const checkLow = (check?.matches || []).filter((m) => m.confidence === 'Low').length;
+  const queueAll = board.queue.flatMap((item) => item.matches.map((m) => ({ item, m })));
+  const queueRows = queueAll.filter(({ m }) => showLow.queue || m.confidence !== 'Low');
+  const queueLow = queueAll.length - queueAll.filter(({ m }) => m.confidence !== 'Low').length;
   const lotOptions = (options?.lots || []).filter((l) => l.productKey === drill.product?.value).map((l) => ({ label: `${l.code}${l.bestBy ? ` (best by ${l.bestBy})` : ''}`, value: l.key }));
 
   return (
@@ -136,13 +143,13 @@ const App = () => {
             <Text>Paste a supplier notice, an email or a regulator alert. RecallReady checks it against every product, GTIN, SKU and lot in your catalog.</Text>
             <TextArea id="notice" value={noticeText} onChange={(e) => setNoticeText(e.target.value)} placeholder="Example: Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26I01A, because of possible Salmonella." />
             <Box>
-              <Button isDisabled={Boolean(busy)} onClick={async () => { setBusy('check'); setFlash(null); const r = await invoke('checkNoticeText', { text: noticeText }); setBusy(''); if (r.ok) setCheck(r); else setFlash({ appearance: 'error', text: r.message }); }}>
+              <Button isDisabled={Boolean(busy)} onClick={async () => { setBusy('check'); setFlash(null); const r = await invoke('checkNoticeText', { text: noticeText }); setBusy(''); if (r.ok) { setCheck(r); setShowLow({ ...showLow, check: false }); } else setFlash({ appearance: 'error', text: r.message }); }}>
                 {busy === 'check' ? 'Checking...' : 'Check against catalog'}
               </Button>
             </Box>
             {check && (check.matches.length === 0 ? (
               <SectionMessage appearance="success"><Text>No product in your catalog matches this notice.</Text></SectionMessage>
-            ) : (
+            ) : checkShown.length > 0 && (
               <DynamicTable
                 head={{ cells: [
                   { key: 'product', content: 'Product', width: 28 },
@@ -151,7 +158,7 @@ const App = () => {
                   { key: 'why', content: 'Why', width: 30 },
                   { key: 'action', content: '', width: 16 },
                 ] }}
-                rows={check.matches.map((m) => ({
+                rows={checkShown.map((m) => ({
                   key: m.productKey,
                   cells: [
                     { key: 'product', content: m.productName },
@@ -163,6 +170,9 @@ const App = () => {
                 }))}
               />
             ))}
+            {checkLow > 0 && (
+              <Box><Button appearance="subtle" onClick={() => setShowLow({ ...showLow, check: !showLow.check })}>{showLow.check ? 'Hide' : 'Show'} {checkLow} brand-only match{checkLow === 1 ? '' : 'es'}</Button></Box>
+            )}
           </Stack>
 
           <Stack space="space.150">
@@ -187,7 +197,7 @@ const App = () => {
           {board.radar ? `Last scan ${time(board.radar.at)}: ${board.radar.checked} public notices checked, ${board.radar.opened} recalls opened, ${board.radar.queued} sent for review.` : 'The radar checks FDA and CPSC recall notices every hour.'}
           {board.radar?.errors?.length ? ` Some sources failed: ${board.radar.errors.join('; ')}` : ''}
         </Text>
-        {board.queue.length > 0 && (
+        {queueRows.length > 0 && (
           <DynamicTable
             head={{ cells: [
               { key: 'notice', content: 'Notice', width: 30 },
@@ -195,7 +205,7 @@ const App = () => {
               { key: 'why', content: 'Why', width: 26 },
               { key: 'action', content: '', width: 18 },
             ] }}
-            rows={board.queue.flatMap((item) => item.matches.map((m) => ({
+            rows={queueRows.map(({ item, m }) => ({
               key: `${item.notice.id}-${m.productKey}`,
               cells: [
                 { key: 'notice', content: item.notice.url ? <Link href={item.notice.url} openNewTab>{item.headline}</Link> : item.headline },
@@ -208,8 +218,11 @@ const App = () => {
                   </Inline>
                 ) },
               ],
-            })))}
+            }))}
           />
+        )}
+        {queueLow > 0 && (
+          <Box><Button appearance="subtle" onClick={() => setShowLow({ ...showLow, queue: !showLow.queue })}>{showLow.queue ? 'Hide' : 'Show'} {queueLow} brand-only match{queueLow === 1 ? '' : 'es'} for review</Button></Box>
         )}
       </Stack>
       <Text><Strong>RecallReady</Strong> never sends anything to customers or regulators by itself. It prepares the records; people decide.</Text>
