@@ -71,6 +71,14 @@ export function fromCpsc(record) {
 }
 
 // A supplier notice, email or any pasted text. The id is stable for the same text.
+// The reason a pasted notice states ("because ...", "due to ..."), up to the end of that sentence.
+const statedReason = (body) => {
+  const m = body.match(/\b(?:because(?:\s+of)?|due\s+to)\s+((?:[^.;!?]|\.(?=\d))+)/i);
+  if (!m) return '';
+  const reason = m[1].trim();
+  return reason.charAt(0).toUpperCase() + reason.slice(1);
+};
+
 export function fromText(text, title) {
   const body = clean(text);
   return finish({
@@ -80,7 +88,7 @@ export function fromText(text, title) {
     firm: '',
     date: '',
     classification: '',
-    reason: '',
+    reason: statedReason(body),
     productText: body,
     codeText: '',
     url: '',

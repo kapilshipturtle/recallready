@@ -65,3 +65,14 @@ test('a long pasted notice gets a title cut at a word, marked with dots', () => 
   assert.equal(text[kept.length], ' ', `cut inside a word: ${title}`);
   assert.equal(fromText('Lot 24B17 recalled').title, 'Lot 24B17 recalled');
 });
+
+test('a pasted notice keeps the stated reason for the recall', () => {
+  assert.equal(fromText('Brightkettle is recalling the Compact Air Fryer 4 qt, model BK-AF400, because the heating element can overheat and pose a fire hazard. Stop selling immediately.').reason, 'The heating element can overheat and pose a fire hazard');
+  assert.equal(fromText('Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26I01A, because of possible Salmonella.').reason, 'Possible Salmonella');
+  assert.equal(fromText('Recall of oat cereal lot 26K14I due to elevated levels of arsenic; return to store.').reason, 'Elevated levels of arsenic');
+  assert.equal(fromText('Lot 24B17 recalled').reason, '');
+});
+
+test('a decimal number does not end the stated reason', () => {
+  assert.equal(fromText('Brightkettle recalls its kettle because the 1.7 L base can crack. Refunds at any store.').reason, 'The 1.7 L base can crack');
+});
