@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_PLAN, buildCase, confirmLocation, markMilestone, caseSummary, closingRecord, customerNotice, regulatorSummary } from '../src/lib/case.js';
+import { DEFAULT_PLAN, buildCase, confirmLocation, markMilestone, caseSummary, closingRecord, customerNotice, regulatorSummary, applyConfirmations, caseOpenedLine } from '../src/lib/case.js';
 
 const catalog = {
   products: [{ key: 'P1', name: 'Harbor Lane Creamy Peanut Butter 16 oz', brand: 'Harbor Lane', sku: 'HL-PB-16', gtin: '02001234567893' }],
@@ -96,4 +96,34 @@ test('customer notice and regulator summary carry the facts', () => {
   const r = regulatorSummary(c);
   assert.match(r, /48 units/);
   assert.match(r, /2 locations/);
+});
+
+const fdaNotice = { ...notice, source: 'FDA food', id: 'FDA:H-0184-2027', url: 'https://api.fda.gov/food/enforcement.json?search=recall_number:"H-0184-2027"' };
+const drillNotice = { ...notice, source: 'Mock recall', id: 'DRILL:20261114100000', title: 'Mock recall of Harbor Lane Creamy Peanut Butter 16 oz', reason: 'Recall test: this is a mock recall, no product is actually affected.' };
+
+test('closing record timeline is in time order even when confirmations are merged later', () => {
+  let c = markMilestone(fresh(), 'customerNotice', hours(2), 'Lee');
+  c = applyConfirmations(c, [{ locationKey: 'S12', units: 36, by: 'Mia', at: hours(1), note: '' }]);
+  const timeline = closingRecord(c, hours(3)).split('Timeline:\n')[1].split('\n');
+  const times = timeline.map((line) => line.slice(2, 22));
+  assert.deepEqual(times, [...times].sort());
+  assert.match(timeline[1], /Mia confirmed 36 of 36/);
+});
+
+test('people never see internal notice ids', () => {
+  const real = buildCase({ notice: fdaNotice, matches, catalog, plan: DEFAULT_PLAN, now: T0 });
+  assert.equal(caseOpenedLine(real), 'Recall opened by RecallReady from FDA food recall H-0184-2027.');
+  assert.match(closingRecord(real, hours(1)), /\(source: FDA food recall H-0184-2027\)/);
+  assert.match(regulatorSummary(real), /Source: FDA food recall H-0184-2027 \(https:/);
+  const drill = buildCase({ notice: drillNotice, matches, catalog, plan: DEFAULT_PLAN, now: T0, drill: true });
+  assert.equal(caseOpenedLine(drill), 'Mock recall (recall test) opened by RecallReady.');
+  for (const text of [closingRecord(real, hours(1)), regulatorSummary(real), closingRecord(drill, hours(1)), regulatorSummary(drill), caseOpenedLine(drill)]) {
+    assert.ok(!/FDA:|DRILL:|TEXT:|CPSC:/.test(text), text);
+  }
+});
+
+test('a mock recall customer notice says it must not be sent', () => {
+  const drill = buildCase({ notice: drillNotice, matches, catalog, plan: DEFAULT_PLAN, now: T0, drill: true });
+  assert.equal(customerNotice(drill, 'Harbor Lane Market').split('\n')[0], 'Mock recall test: do not send this notice to customers.');
+  assert.ok(!/Mock recall test/.test(customerNotice(fresh(), 'Harbor Lane Market')));
 });

@@ -4,6 +4,7 @@ import { getCase, confirm, setMilestone, closeRecall } from '../services/recalls
 import { caseSummary, customerNotice, regulatorSummary } from '../lib/case.js';
 import { getSettings } from '../platform/settings.js';
 import { resultFromError } from '../lib/errors.js';
+import { noticeHeadline } from '../lib/notices.js';
 
 const keyFrom = (context) => context?.extension?.issue?.key;
 
@@ -23,6 +24,7 @@ async function panelState(issueKey) {
     mode: 'case',
     issueKey,
     caseData: data,
+    headline: noticeHeadline(data.notice),
     summary: caseSummary(data, now),
     subtasks: found.subtasks,
     customerNotice: customerNotice(data, settings.company || 'our company'),

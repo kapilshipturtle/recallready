@@ -113,7 +113,7 @@ const App = () => {
                         <Link href={`${board.siteUrl}/browse/${r.issueKey}`} openNewTab>{`${r.issueKey}: ${r.title}`}</Link>
                         <Inline space="space.050">
                           {r.drill && <Lozenge appearance="new">Mock recall</Lozenge>}
-                          <Text>{r.source}</Text>
+                          {!r.drill && <Text>{r.source}</Text>}
                         </Inline>
                       </Stack>
                     ) },
@@ -167,7 +167,7 @@ const App = () => {
 
           <Stack space="space.150">
             <Heading size="small">Run a mock recall</Heading>
-            <Text>Food-safety standards such as SQF and BRCGS expect the recall process to be tested at least once a year. A mock recall runs the real process and is clearly labelled.</Text>
+            <Text>Food-safety standards such as the SQF Code require the withdrawal and recall procedure to be tested at least once a year. A mock recall runs the real process and is clearly labelled.</Text>
             <Label labelFor="drill-product">Product</Label>
             <Select id="drill-product" options={(options?.products || []).map((p) => ({ label: p.name, value: p.key }))} value={drill.product} onChange={(o) => setDrill({ product: o, lots: [] })} placeholder="Choose a product" />
             <Label labelFor="drill-lots">Lots (leave empty for every lot)</Label>
@@ -198,7 +198,7 @@ const App = () => {
             rows={board.queue.flatMap((item) => item.matches.map((m) => ({
               key: `${item.notice.id}-${m.productKey}`,
               cells: [
-                { key: 'notice', content: item.notice.url ? <Link href={item.notice.url} openNewTab>{`${item.notice.source}: ${item.notice.title}`}</Link> : `${item.notice.source}: ${item.notice.title}` },
+                { key: 'notice', content: item.notice.url ? <Link href={item.notice.url} openNewTab>{item.headline}</Link> : item.headline },
                 { key: 'product', content: <Inline space="space.050"><Lozenge appearance={CONFIDENCE[m.confidence]}>{m.confidence}</Lozenge><Text>{m.productName}</Text></Inline> },
                 { key: 'why', content: m.evidence.join('. ') },
                 { key: 'action', content: (

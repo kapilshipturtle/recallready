@@ -2,6 +2,7 @@
 // recall team needs (customer notice, regulator summary, closing record). Pure functions;
 // every update returns a new object.
 import { clockStatus } from './clocks.js';
+import { noticeRef } from './notices.js';
 
 export const DEFAULT_PLAN = [
   { key: 'stopSale', label: 'Stop sale at every location', hours: 4 },
@@ -57,7 +58,7 @@ export function buildCase({ notice, matches, catalog, plan = DEFAULT_PLAN, now, 
       .filter((o) => lotKeys.has(o.lotKey))
       .map((o) => ({ key: o.key, orderNumber: o.orderNumber, units: Number(o.units), customerName: o.customerName, customerEmail: o.customerEmail, lotCode: lotCode[o.lotKey] })),
     milestones: { stopSale: null, customerNotice: null, regulatorSummary: null, effectiveness: null, closed: null },
-    audit: [{ at: now, by: 'RecallReady', event: `${drill ? 'Mock recall' : 'Recall'} opened from ${notice.source} ${notice.id}` }],
+    audit: [{ at: now, by: 'RecallReady', event: drill ? 'Mock recall opened' : `Recall opened from ${noticeRef(notice)}` }],
   };
 }
 
@@ -113,7 +114,7 @@ export function closingRecord(caseData, now) {
   const s = caseSummary(caseData, now);
   const lines = [
     `RecallReady closing record${caseData.drill ? ' (mock recall)' : ''}`,
-    `Recall: ${caseData.notice.title} (${caseData.notice.source} ${caseData.notice.id})`,
+    `Recall: ${caseData.notice.title}${caseData.drill ? '' : ` (source: ${noticeRef(caseData.notice)})`}`,
     `Opened: ${timeText(caseData.startedAt)}. Closed: ${timeText(now)}.`,
     `Products: ${productLine(caseData)}`,
     `Lots: ${lotLine(caseData)}`,
@@ -126,7 +127,9 @@ export function closingRecord(caseData, now) {
   lines.push('Response plan:');
   for (const c of s.clocks) lines.push(`- ${c.label} (target ${c.hours} h): ${c.status === 'met' ? `met at ${timeText(c.metAt)}` : c.status === 'overdue' ? 'missed' : 'not met yet'}`);
   lines.push('Timeline:');
-  for (const a of caseData.audit) lines.push(`- ${timeText(a.at)} ${a.event}`);
+  // Sub-task confirmations are merged after stored events, so sort; the sort is stable.
+  const timeline = [...caseData.audit].sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  for (const a of timeline) lines.push(`- ${timeText(a.at)} ${a.event}`);
   return lines.join('\n');
 }
 
@@ -134,6 +137,7 @@ export function customerNotice(caseData, company) {
   const lots = lotLine(caseData);
   const products = caseData.products.map((p) => p.name).join(', ');
   return [
+    ...(caseData.drill ? ['Mock recall test: do not send this notice to customers.', ''] : []),
     `Subject: Important recall notice: ${products}`,
     '',
     'Dear customer,',
@@ -147,11 +151,16 @@ export function customerNotice(caseData, company) {
   ].filter((line, i, all) => line !== '' || all[i - 1] !== '').join('\n');
 }
 
+// First line of the case description in Jira.
+export function caseOpenedLine(caseData) {
+  return caseData.drill ? 'Mock recall (recall test) opened by RecallReady.' : `Recall opened by RecallReady from ${noticeRef(caseData.notice)}.`;
+}
+
 export function regulatorSummary(caseData) {
   const s = caseSummary(caseData, caseData.startedAt);
   return [
     `Recall summary for regulator report${caseData.drill ? ' (mock recall, not for submission)' : ''}`,
-    `Source: ${caseData.notice.source} ${caseData.notice.id}${caseData.notice.url ? ` (${caseData.notice.url})` : ''}`,
+    `Source: ${noticeRef(caseData.notice)}${caseData.notice.url ? ` (${caseData.notice.url})` : ''}`,
     caseData.notice.firm ? `Recalling firm: ${caseData.notice.firm}` : '',
     `Products: ${productLine(caseData)}`,
     `Lots: ${lotLine(caseData)}`,

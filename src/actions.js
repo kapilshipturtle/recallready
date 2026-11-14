@@ -8,6 +8,7 @@
 import { checkProduct, getCase, listOpenRecalls, checkNotice, startRecall } from './services/recalls.js';
 import { caseSummary, customerNotice, regulatorSummary } from './lib/case.js';
 import { getSettings } from './platform/settings.js';
+import { noticeRef } from './lib/notices.js';
 
 const pickKey = (payload) => payload?.issueKey || payload?.context?.jira?.issueKey || payload?.context?.jira?.issue?.key;
 
@@ -51,7 +52,7 @@ export const getRecallStatusAction = safe(async (payload) => {
   return {
     key: found.issueKey,
     mockRecall: d.drill,
-    source: `${d.notice.source} ${d.notice.id}`,
+    source: noticeRef(d.notice),
     products: d.products.map((p) => p.name),
     lots: d.lots.map((l) => l.code),
     locationsConfirmed: s.locationsConfirmed,

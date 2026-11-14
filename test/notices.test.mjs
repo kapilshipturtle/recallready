@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { fromFda, fromCpsc, fromText } from '../src/lib/notices.js';
+import { fromFda, fromCpsc, fromText, noticeRef, noticeHeadline } from '../src/lib/notices.js';
 
 const fda = JSON.parse(readFileSync(new URL('./fixtures/fda-food.json', import.meta.url)));
 const cpsc = JSON.parse(readFileSync(new URL('./fixtures/cpsc.json', import.meta.url)));
@@ -40,4 +40,17 @@ test('pasted text becomes a notice with a stable id', () => {
   assert.match(a.id, /^TEXT:[0-9a-f]{12}$/);
   assert.equal(a.id, b.id);
   assert.notEqual(a.id, fromText('Something else').id);
+});
+
+test('notice reference names the source in words, never an internal id', () => {
+  assert.equal(noticeRef(fromFda(fda, 'food')), 'FDA food recall H-0184-2027');
+  assert.equal(noticeRef(fromCpsc(cpsc)), 'CPSC recall 27082');
+  assert.equal(noticeRef(fromText('Recall of lot 24B17')), 'pasted notice text');
+  assert.equal(noticeRef({ source: 'Mock recall', id: 'DRILL:20261114064206' }), 'mock recall');
+});
+
+test('notice headline does not repeat a source the title already names', () => {
+  assert.equal(noticeHeadline({ source: 'Mock recall', title: 'Mock recall of Larkmere Creamy Peanut Butter 16 oz' }), 'Mock recall of Larkmere Creamy Peanut Butter 16 oz');
+  assert.equal(noticeHeadline({ source: 'FDA food', title: 'Rustic Bread Mix' }), 'FDA food: Rustic Bread Mix');
+  assert.equal(noticeHeadline({ source: 'Text', title: 'Supplier email' }), 'Pasted notice: Supplier email');
 });

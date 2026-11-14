@@ -18,7 +18,7 @@ Why this pick (evidence, 2026-11-14):
 - Live public data exists: openFDA food enforcement API (29,598 records, latest 2026-11-04), CPSC Recalls API (19 recalls since 2026-11-01).
 
 Facts used in the pitch (sourced; check wording before quoting):
-- SQF (2.6.3.2) and BRCGS require the withdrawal and recall system to be tested at least annually (forum and consultant quotes of the clauses; confirm against the official code text).
+- SQF requires the withdrawal and recall procedure to be tested at least annually (verified 2026-11-14 on SQFI's own code page "Product Withdrawal & Recall": "The supplier shall review and test their withdrawal and recall procedure at least annually"). BRCGS Issue 9 wording could not be read from an official free source (the free sample stops before clause 3.11), so the product names only SQF.
 - CPSC: a firm must report within 24 hours of obtaining reportable information (Section 15(b)).
 - EU GPSR applies from 13 Dec 2024; online marketplaces must directly notify consumers who bought a recalled product through them and publish recall information.
 

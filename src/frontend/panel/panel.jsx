@@ -41,7 +41,7 @@ function CaseView({ state, act, busy }) {
           {c.milestones.closed ? <Lozenge appearance="success">Closed</Lozenge> : <Lozenge appearance="inprogress">Open</Lozenge>}
         </Inline>
         <Text><Strong>{c.products.map((p) => p.name).join(', ')}</Strong>, lot{c.lots.length === 1 ? '' : 's'} {c.lots.map((l) => l.code).join(', ')}</Text>
-        {c.notice.url ? <Link href={c.notice.url} openNewTab>{`${c.notice.source}: ${c.notice.title}`}</Link> : <Text>{c.notice.source}: {c.notice.title}</Text>}
+        {c.notice.url ? <Link href={c.notice.url} openNewTab>{state.headline}</Link> : <Text>{state.headline}</Text>}
         {c.notice.reason && <Text>Reason: {c.notice.reason}</Text>}
       </Stack>
 

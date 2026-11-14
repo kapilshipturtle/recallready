@@ -1,9 +1,9 @@
 // Recall cases in Jira: create, read (with confirmations merged in), confirm, milestones,
 // close, list, and catalog lookups for the board, the panel, Rovo and MCP.
-import { fromText } from '../lib/notices.js';
+import { fromText, noticeRef } from '../lib/notices.js';
 import { matchNotice } from '../lib/match.js';
 import { normalizeGtin, normalizeModel } from '../lib/ids.js';
-import { buildCase, applyConfirmations, markMilestone, caseSummary, closingRecord, caseTitle, stopSaleTitle } from '../lib/case.js';
+import { buildCase, applyConfirmations, markMilestone, caseSummary, closingRecord, caseTitle, stopSaleTitle, caseOpenedLine } from '../lib/case.js';
 import { clockStatus } from '../lib/clocks.js';
 import { docFromBlocks, textToAdf } from '../lib/adf.js';
 import { loadCatalog } from '../platform/assets.js';
@@ -45,7 +45,7 @@ const timeText = (iso) => `${String(iso).slice(0, 16).replace('T', ' ')} UTC`;
 
 function caseDescription(c, evidence) {
   return docFromBlocks([
-    { text: `${c.drill ? 'Mock recall (recall test) ' : 'Recall '}opened by RecallReady from ${c.notice.source} ${c.notice.id}.` },
+    { text: caseOpenedLine(c) },
     c.notice.url ? { text: 'Source: ', link: { text: c.notice.title || c.notice.url, href: c.notice.url } } : { text: `Notice: ${c.notice.title}` },
     c.notice.reason ? { text: `Reason: ${c.notice.reason}` } : {},
     { heading: 'What is affected' },
@@ -176,7 +176,7 @@ export async function listOpenRecalls(who = 'user') {
       issueKey: c.key,
       title: c.fields.summary,
       drill: Boolean(data.drill),
-      source: `${data.notice.source} ${data.notice.id}`,
+      source: noticeRef(data.notice),
       startedAt: data.startedAt,
       productKeys: data.products.map((p) => p.key),
       lotKeys: data.lots.map((l) => l.key),

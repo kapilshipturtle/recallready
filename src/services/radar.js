@@ -1,6 +1,6 @@
 // The recall radar: reads new public notices, matches them against the catalog, opens cases
 // for High matches and queues the rest for a person to review.
-import { fromFda, fromCpsc } from '../lib/notices.js';
+import { fromFda, fromCpsc, noticeRef } from '../lib/notices.js';
 import { planScan, mergeSeen, sinceDate } from '../lib/radar.js';
 import { fetchFda, fetchCpsc } from '../platform/feeds.js';
 import { loadCatalog } from '../platform/assets.js';
@@ -53,7 +53,7 @@ export async function runScan({ now = new Date().toISOString(), who = 'app' } = 
       const result = await startRecall({ notice: item.notice, selections: item.matches.map((m) => ({ productKey: m.productKey, lotKeys: m.lotKeys })), evidence: item.matches.flatMap((m) => m.evidence), who });
       openedKeys.push(result.issueKey);
     } catch (error) {
-      errors.push(`Could not open a case for ${item.notice.id}: ${String(error.message || error).slice(0, 160)}`);
+      errors.push(`Could not open a case for ${noticeRef(item.notice)}: ${String(error.message || error).slice(0, 160)}`);
       toReview.push(enrich(item));
     }
   }

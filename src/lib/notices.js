@@ -82,3 +82,24 @@ export function fromText(text, title) {
     models: [],
   });
 }
+
+// Where a notice came from, in the words people use. Internal ids (FDA:, CPSC:, TEXT:, DRILL:)
+// never reach a person.
+export function noticeRef(notice) {
+  const id = String(notice?.id || '');
+  const number = id.slice(id.indexOf(':') + 1);
+  if (id.startsWith('FDA:') || id.startsWith('CPSC:')) return `${notice.source} recall ${number}`;
+  if (id.startsWith('TEXT:')) return 'pasted notice text';
+  if (id.startsWith('DRILL:')) return 'mock recall';
+  return [notice?.source, id].filter(Boolean).join(' ');
+}
+
+const SOURCE_LABELS = { Text: 'Pasted notice' };
+
+// One line naming a notice. A title that already names its source is shown alone.
+export function noticeHeadline(notice) {
+  const label = SOURCE_LABELS[notice?.source] || notice?.source || '';
+  const title = String(notice?.title || '');
+  if (!label || title.toLowerCase().startsWith(label.toLowerCase())) return title;
+  return `${label}: ${title}`;
+}

@@ -3,7 +3,7 @@ import { listOpenRecalls, checkNotice, startRecall } from '../services/recalls.j
 import { loadCatalog } from '../platform/assets.js';
 import { getSettings, getState, setState } from '../platform/settings.js';
 import { siteUrl } from '../platform/jira.js';
-import { fromText } from '../lib/notices.js';
+import { fromText, noticeHeadline } from '../lib/notices.js';
 import { resultFromError } from '../lib/errors.js';
 
 async function ready() {
@@ -20,8 +20,9 @@ export function defineBoard(resolver) {
     try {
       const { message } = await ready();
       const url = await baseUrl(context);
-      const [radar, queue] = await Promise.all([getState('radar-last'), getState('radar-queue', [])]);
-      if (message) return { ok: true, setupNeeded: true, message, siteUrl: url, radar, queue: queue || [] };
+      const [radar, stored] = await Promise.all([getState('radar-last'), getState('radar-queue', [])]);
+      const queue = (stored || []).map((item) => ({ ...item, headline: noticeHeadline(item.notice) }));
+      if (message) return { ok: true, setupNeeded: true, message, siteUrl: url, radar, queue };
       const recalls = await listOpenRecalls('user');
       const kpis = {
         open: recalls.length,
@@ -29,7 +30,7 @@ export function defineBoard(resolver) {
         unitsOutstanding: recalls.reduce((s, r) => s + Math.max(0, r.summary.expectedUnits - r.summary.recoveredUnits), 0),
         overdue: recalls.reduce((s, r) => s + r.summary.clocks.filter((c) => c.status === 'overdue').length, 0),
       };
-      return { ok: true, setupNeeded: false, siteUrl: url, recalls, kpis, radar, queue: queue || [] };
+      return { ok: true, setupNeeded: false, siteUrl: url, recalls, kpis, radar, queue };
     } catch (error) {
       return resultFromError(error);
     }
