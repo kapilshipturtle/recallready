@@ -142,13 +142,15 @@ const App = () => {
         <Heading size="small">4. Recall radar</Heading>
         <Text>Every hour RecallReady reads new public recall notices and checks them against your catalog.</Text>
         {SOURCES.map((s) => (
-          <Toggle
-            key={s.key}
-            id={`source-${s.key}`}
-            label={s.label}
-            isChecked={Boolean(draft.sources[s.key])}
-            onChange={(event) => setDraft({ ...draft, sources: { ...draft.sources, [s.key]: Boolean(event.target.checked) } })}
-          />
+          <Inline key={s.key} space="space.100" alignBlock="center">
+            <Toggle
+              id={`source-${s.key}`}
+              label={s.label}
+              isChecked={Boolean(draft.sources[s.key])}
+              onChange={(event) => setDraft({ ...draft, sources: { ...draft.sources, [s.key]: Boolean(event.target.checked) } })}
+            />
+            <Label labelFor={`source-${s.key}`}>{s.label}</Label>
+          </Inline>
         ))}
         <Box><Button isDisabled={Boolean(busy)} onClick={() => act('scan', 'scanNow')}>{busy === 'scan' ? 'Scanning...' : 'Scan now'}</Button></Box>
         {message && busyArea === 'scan' && <SectionMessage appearance={message.appearance}><Text>{message.text}</Text></SectionMessage>}
