@@ -1,6 +1,51 @@
-modules: {}
+modules:
+  # Settings: catalog in Assets, recall project, response plan, radar sources (Jira admins).
+  jira:adminPage:
+    - key: recallready-admin
+      resource: admin-ui/entry
+      resolver:
+        function: resolver
+      render: native
+      title: RecallReady
+
+  # Background job that creates the sample catalog objects.
+  consumer:
+    - key: sample-loader
+      queue: rr-sample-load
+      function: sample-loader-fn
+
+  function:
+    - key: resolver
+      handler: index.handler
+    - key: sample-loader-fn
+      handler: index.sampleLoader
+      timeoutSeconds: 600
+
+resources:
+  - key: admin-ui
+    path: src/frontend/admin
+    entry:
+      entry: admin.jsx
+
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - read:jira-user
+    - storage:app
+    - read:servicedesk-request
+    - read:cmdb-object:jira
+    - write:cmdb-object:jira
+    - read:cmdb-schema:jira
+    - write:cmdb-schema:jira
+    - read:cmdb-type:jira
+    - write:cmdb-type:jira
+    - read:cmdb-attribute:jira
+    - write:cmdb-attribute:jira
+
 app:
   runtime:
     name: nodejs24.x
     memoryMB: 256
+    architecture: arm64
   id: ari:cloud:ecosystem::app/8892cc42-631f-4a62-a8a1-4188d116d47d
