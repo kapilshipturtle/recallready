@@ -217,6 +217,7 @@ permissions:
     - write:cmdb-type:jira
     - read:cmdb-attribute:jira
     - write:cmdb-attribute:jira
+    - read:cmdb-config:jira
   external:
     fetch:
       backend:
