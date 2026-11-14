@@ -134,7 +134,7 @@ const App = () => {
           <Stack space="space.150">
             <Heading size="small">Check a notice</Heading>
             <Text>Paste a supplier notice, an email or a regulator alert. RecallReady checks it against every product, GTIN, SKU and lot in your catalog.</Text>
-            <TextArea id="notice" value={noticeText} onChange={(e) => setNoticeText(e.target.value)} placeholder="Example: Coastal Foods is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26I01A, because of possible Salmonella." />
+            <TextArea id="notice" value={noticeText} onChange={(e) => setNoticeText(e.target.value)} placeholder="Example: Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26I01A, because of possible Salmonella." />
             <Box>
               <Button isDisabled={Boolean(busy)} onClick={async () => { setBusy('check'); setFlash(null); const r = await invoke('checkNoticeText', { text: noticeText }); setBusy(''); if (r.ok) setCheck(r); else setFlash({ appearance: 'error', text: r.message }); }}>
                 {busy === 'check' ? 'Checking...' : 'Check against catalog'}
