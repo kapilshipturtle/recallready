@@ -122,6 +122,8 @@ forge install --site <your-site>.atlassian.net --product Jira -e development
 
 The recall radar reads two public sources, the openFDA enforcement reports (api.fda.gov) and the CPSC recalls API (www.saferproducts.gov). It sends them only a date range; no catalog or customer data leaves Atlassian. See [PRIVACY.md](PRIVACY.md), [TERMS.md](TERMS.md) and [SECURITY.md](SECURITY.md).
 
+Data sources: FDA recall data is provided by the U.S. Food and Drug Administration (https://open.fda.gov) and is in the public domain. CPSC recall data comes from the U.S. Consumer Product Safety Commission's Recalls API, which CPSC makes publicly available to consumers, businesses and software developers. Always check the original notice.
+
 Questions and bug reports: [GitHub issues](https://github.com/kapilshipturtle/recallready/issues).
 
 ## License
