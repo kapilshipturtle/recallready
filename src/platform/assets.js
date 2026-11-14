@@ -61,7 +61,9 @@ export async function ensureSchema(workspaceId) {
   const existing = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objectschema/${schemaId}/objecttypes`);
   const typeIds = Object.fromEntries((existing || []).map((t) => [t.name, String(t.id)]));
   const typeIcons = Object.fromEntries((existing || []).map((t) => [t.name, String(t.icon?.id || '')]));
-  const icons = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/icon/global`).catch(orElse([]));
+  // Icons are cosmetic and the same for everyone: read them as the app, and never let them
+  // stop setup (not even with a consent error, which could not be granted from here).
+  const icons = await call('app', route`/jsm/assets/workspace/${workspaceId}/v1/icon/global`).catch(() => []);
   const referenceTypes = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/config/referencetype`);
   const referenceType = (referenceTypes || []).find((r) => r.name === 'Reference') || (referenceTypes || [])[0];
 
