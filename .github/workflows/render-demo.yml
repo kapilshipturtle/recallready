@@ -6,6 +6,13 @@ name: Render demo video
 
 on:
   workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - "demo-video/index.html"
+      - "demo-video/compositions/**"
+      - "demo-video/assets/**"
+      - ".github/workflows/render-demo.yml"
 
 jobs:
   render:
