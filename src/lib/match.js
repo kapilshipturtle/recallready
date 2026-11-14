@@ -7,6 +7,7 @@ const STOP_WORDS = new Set([
   'the', 'a', 'an', 'of', 'and', 'with', 'for', 'in', 'on', 'by', 'to', 'or', 'all', 'from', 'its', 'per',
   'inc', 'llc', 'ltd', 'co', 'corp', 'company', 'brand', 'product', 'products',
   'oz', 'fl', 'lb', 'lbs', 'g', 'kg', 'mg', 'ml', 'l', 'gal', 'ct', 'pk', 'pack', 'count', 'x',
+  'qt', 'pt', 'cm', 'mm', 'pc', 'pcs', 'piece', 'pieces', 'set',
 ]);
 const RANK = { High: 3, Medium: 2, Low: 1 };
 
@@ -41,20 +42,28 @@ export function matchNotice(notice, catalog) {
     const evidence = [];
     const gtin = normalizeGtin(product.gtin);
     const sku = normalizeModel(product.sku);
+    const brandWords = words(product.brand);
+    const brandPresent = brandWords.length > 0 && brandWords.every((w) => noticeWords.has(w));
     let confidence;
     let score;
+    let brandOnly = false;
 
     if (gtin && noticeGtins.has(gtin)) {
       confidence = 'High';
       score = 1;
       evidence.push(`GTIN ${gtin} appears in the notice`);
     } else if (sku.length >= 3 && noticeModels.has(sku)) {
-      confidence = 'High';
-      score = 0.95;
       evidence.push(`Model ${sku} matches SKU ${product.sku}`);
+      // A model number alone can collide with another company's SKU, so it needs the brand too.
+      if (brandPresent) {
+        confidence = 'High';
+        score = 0.95;
+      } else {
+        confidence = 'Medium';
+        score = 0.7;
+        evidence.push(`The brand is not named in the notice`);
+      }
     } else {
-      const brandWords = words(product.brand);
-      const brandPresent = brandWords.length > 0 && brandWords.every((w) => noticeWords.has(w));
       if (!brandPresent) continue;
       const nameWithoutBrand = words(product.name).filter((w) => !brandWords.includes(w)).join(' ');
       const share = nameSimilarity(nameWithoutBrand, text);
@@ -70,7 +79,16 @@ export function matchNotice(notice, catalog) {
       } else {
         confidence = 'Low';
         score = share * 0.5;
+        brandOnly = share === 0;
       }
+    }
+
+    // The notice names its lots and none of them is one of ours: a person must look first.
+    if (confidence === 'High' && noticeLots.size && !lotHits.length) {
+      confidence = 'Medium';
+      score = 0.8;
+      const listed = [...noticeLots];
+      evidence.push(`The notice lists lot${listed.length === 1 ? '' : 's'} ${listed.join(', ')}; none of them is in the catalog for this product`);
     }
 
     for (const lot of lotHits) evidence.push(`Lot ${lot.code} is listed in the notice`);
@@ -80,6 +98,7 @@ export function matchNotice(notice, catalog) {
       score,
       lotKeys: (lotHits.length ? lotHits : productLots).map((l) => l.key),
       evidence,
+      brandOnly,
     });
   }
 

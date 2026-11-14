@@ -128,3 +128,10 @@ function build() {
 }
 
 export const SAMPLE = build();
+
+// The sample only goes into an empty catalog. After a reinstall the record of what this
+// installation created is gone, so loading again would create a second copy of every object.
+export function sampleLoadDecision({ productCount, mapSize }) {
+  if (mapSize > 0 || !productCount) return { ok: true };
+  return { ok: false, message: 'The catalog already has products, so the sample is not loaded again. The sample only goes into an empty catalog.' };
+}

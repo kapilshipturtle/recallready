@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeGtin, gtinCheckDigitOk, extractGtins, extractLots, normalizeModel } from '../src/lib/ids.js';
+import { normalizeGtin, gtinCheckDigitOk, extractGtins, extractLots, normalizeModel, extractModels } from '../src/lib/ids.js';
 
 test('UPC-A pads to GTIN-14', () => assert.equal(normalizeGtin('012345678905'), '00012345678905'));
 test('bad check digit is null', () => assert.equal(normalizeGtin('012345678904'), null));
@@ -18,3 +18,15 @@ test('dates are not lots', () => {
 });
 test('lots are uppercased and unique', () => assert.deepEqual(extractLots('lot ab12c, lot AB12C'), ['AB12C']));
 test('model normalize', () => assert.equal(normalizeModel('fp-2000 x'), 'FP2000X'));
+
+test('13-digit GTINs printed with spaces are read whole, not as a shorter valid prefix', () => {
+  const granola = extractGtins('UPC 2 000000 00004 6');
+  assert.ok(granola.includes('02000000000046'), granola.join());
+  assert.ok(!granola.includes('00200000000004'), granola.join());
+  assert.ok(extractGtins('UPC 2 000000 00011 4').includes('02000000000114'));
+});
+test('model numbers are read after model, item or SKU and must contain a digit', () => {
+  assert.deepEqual(extractModels('Brightkettle recalls model BK-AF400 air fryer'), ['BKAF400']);
+  assert.deepEqual(extractModels('Model No. FP-2000X and item # 55-210; SKU: QF-BM14'), ['FP2000X', '55210', 'QFBM14']);
+  assert.deepEqual(extractModels('a model citizen and an item of note'), []);
+});

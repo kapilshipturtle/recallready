@@ -1,8 +1,9 @@
 // Resolvers for the Recall board (Jira global page).
 import { listOpenRecalls, checkNotice, startRecall } from '../services/recalls.js';
 import { loadCatalog } from '../platform/assets.js';
-import { getSettings, getState, setState } from '../platform/settings.js';
-import { siteUrl } from '../platform/jira.js';
+import { getSettings, getState, setState, deleteState, listState } from '../platform/settings.js';
+import { siteUrl, canCreateIn, myName } from '../platform/jira.js';
+import { REVIEW_PREFIX } from '../services/radar.js';
 import { fromText, noticeHeadline } from '../lib/notices.js';
 import { resultFromError } from '../lib/errors.js';
 
@@ -15,13 +16,21 @@ async function ready() {
 
 const baseUrl = async (context) => context?.siteUrl || (await siteUrl('user').catch(() => ''));
 
+// Removes only the matches that were acted on; the rest of the notice stays for review.
+async function keepOthers(key, item, productKeys) {
+  const remaining = (item.matches || []).filter((m) => !productKeys.includes(m.productKey));
+  if (remaining.length) await setState(key, { ...item, matches: remaining });
+  else await deleteState(key);
+}
+
 export function defineBoard(resolver) {
   resolver.define('getBoard', async ({ context }) => {
     try {
       const { message } = await ready();
       const url = await baseUrl(context);
-      const [radar, stored] = await Promise.all([getState('radar-last'), getState('radar-queue', [])]);
-      const queue = (stored || []).map((item) => ({ ...item, headline: noticeHeadline(item.notice) }));
+      const [radar, stored] = await Promise.all([getState('radar-last'), listState(REVIEW_PREFIX, 100)]);
+      const queue = stored.map((r) => ({ ...r.value, headline: noticeHeadline(r.value.notice) }))
+        .sort((a, b) => String(b.addedAt).localeCompare(String(a.addedAt)));
       if (message) return { ok: true, setupNeeded: true, message, siteUrl: url, radar, queue };
       const recalls = await listOpenRecalls('user');
       const kpis = {
@@ -65,10 +74,12 @@ export function defineBoard(resolver) {
   resolver.define('startFromNotice', async ({ payload, context }) => {
     try {
       const text = String(payload?.text || '').trim();
+      const keys = Array.isArray(payload?.productKeys) ? payload.productKeys : [payload?.productKey];
       const { notice, matches } = await checkNotice(text, 'user');
-      const chosen = matches.filter((m) => m.productKey === payload?.productKey);
-      if (!chosen.length) return { ok: false, message: 'That product is not a match for this notice any more.' };
-      const result = await startRecall({ notice, selections: chosen.map((m) => ({ productKey: m.productKey, lotKeys: m.lotKeys })), evidence: chosen[0].evidence, who: 'user' });
+      const chosen = matches.filter((m) => keys.includes(m.productKey));
+      if (!chosen.length) return { ok: false, message: 'Choose at least one matching product.' };
+      // One case for every product chosen from this notice.
+      const result = await startRecall({ notice, selections: chosen.map((m) => ({ productKey: m.productKey, lotKeys: m.lotKeys })), evidence: chosen.flatMap((m) => m.evidence), who: 'user' });
       return { ok: true, ...result, url: `${await baseUrl(context)}/browse/${result.issueKey}` };
     } catch (error) {
       return resultFromError(error);
@@ -100,12 +111,13 @@ export function defineBoard(resolver) {
 
   resolver.define('startFromReview', async ({ payload, context }) => {
     try {
-      const queue = (await getState('radar-queue', [])) || [];
-      const item = queue.find((q) => q.notice.id === payload?.noticeId);
-      const match = item?.matches.find((m) => m.productKey === payload?.productKey);
-      if (!item || !match) return { ok: false, message: 'That review item is gone. Refresh the board.' };
-      const result = await startRecall({ notice: item.notice, selections: [{ productKey: match.productKey, lotKeys: match.lotKeys }], evidence: match.evidence, who: 'user' });
-      await setState('radar-queue', queue.filter((q) => q.notice.id !== item.notice.id));
+      const key = `${REVIEW_PREFIX}${payload?.noticeId}`;
+      const item = await getState(key);
+      const keys = Array.isArray(payload?.productKeys) ? payload.productKeys : [payload?.productKey];
+      const chosen = (item?.matches || []).filter((m) => keys.includes(m.productKey));
+      if (!item || !chosen.length) return { ok: false, message: 'That review item is gone. Refresh the board.' };
+      const result = await startRecall({ notice: item.notice, selections: chosen.map((m) => ({ productKey: m.productKey, lotKeys: m.lotKeys })), evidence: chosen.flatMap((m) => m.evidence), who: 'user' });
+      await keepOthers(key, item, keys);
       return { ok: true, ...result, url: `${await baseUrl(context)}/browse/${result.issueKey}` };
     } catch (error) {
       return resultFromError(error);
@@ -114,8 +126,18 @@ export function defineBoard(resolver) {
 
   resolver.define('dismissReview', async ({ payload }) => {
     try {
-      const queue = (await getState('radar-queue', [])) || [];
-      await setState('radar-queue', queue.filter((q) => q.notice.id !== payload?.noticeId));
+      const { settings } = await ready();
+      if (!settings.projectKey || !(await canCreateIn(settings.projectKey, 'user'))) {
+        return { ok: false, message: 'Only people who can create work items in the recall project can dismiss review items.' };
+      }
+      const key = `${REVIEW_PREFIX}${payload?.noticeId}`;
+      const item = await getState(key);
+      if (!item) return { ok: true };
+      const keys = Array.isArray(payload?.productKeys) ? payload.productKeys : (item.matches || []).map((m) => m.productKey);
+      await keepOthers(key, item, keys);
+      const by = await myName('user').catch(() => 'Someone');
+      const log = (await getState('radar-dismissed', [])) || [];
+      await setState('radar-dismissed', [...log, { noticeId: payload?.noticeId, products: keys, by, at: new Date().toISOString() }].slice(-200));
       return { ok: true };
     } catch (error) {
       return resultFromError(error);

@@ -6,6 +6,7 @@ export function clockStatus(startedAt, plan, milestones, now) {
     const dueMs = start + Number(step.hours) * 3600e3;
     const metAt = (milestones || {})[step.key] || null;
     const status = metAt ? 'met' : nowMs > dueMs ? 'overdue' : 'due';
-    return { key: step.key, label: step.label, hours: Number(step.hours), dueAt: new Date(dueMs).toISOString(), status, metAt };
+    const late = Boolean(metAt) && Date.parse(metAt) > dueMs;
+    return { key: step.key, label: step.label, hours: Number(step.hours), dueAt: new Date(dueMs).toISOString(), status, metAt, late };
   });
 }

@@ -1,6 +1,6 @@
 // Resolvers for the RecallReady issue panel. The work item key always comes from the Forge
 // context, never from the browser.
-import { getCase, confirm, setMilestone, closeRecall } from '../services/recalls.js';
+import { getCase, confirm, setMilestone, closeRecall, ordersForLots } from '../services/recalls.js';
 import { caseSummary, customerNotice, regulatorSummary } from '../lib/case.js';
 import { getSettings } from '../platform/settings.js';
 import { resultFromError } from '../lib/errors.js';
@@ -15,7 +15,7 @@ async function panelState(issueKey) {
   if (found.role === 'location') {
     const parent = await getCase(found.caseKey, 'user');
     const location = parent?.caseData?.locations.find((l) => l.key === found.locationKey) || null;
-    return { ok: true, mode: 'location', caseKey: found.caseKey, caseTitle: parent ? parent.caseData.notice.title : '', drill: Boolean(parent?.caseData?.drill), location };
+    return { ok: true, mode: 'location', caseKey: found.caseKey, caseTitle: parent ? parent.caseData.notice.title : '', drill: Boolean(parent?.caseData?.drill), closed: Boolean(parent?.caseData?.milestones?.closed), location };
   }
   const settings = await getSettings();
   const data = found.caseData;
@@ -27,6 +27,7 @@ async function panelState(issueKey) {
     headline: noticeHeadline(data.notice),
     summary: caseSummary(data, now),
     subtasks: found.subtasks,
+    orders: await ordersForLots(settings.schemaIds, data.lots.map((l) => l.key)).catch(() => null),
     customerNotice: customerNotice(data, settings.company || 'our company'),
     regulatorSummary: regulatorSummary(data),
   };

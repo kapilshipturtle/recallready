@@ -23,3 +23,11 @@ test('met clock keeps its time', () => {
   assert.equal(c.status, 'met');
   assert.equal(c.metAt, at(3));
 });
+
+test('a step met after its due time is marked late', () => {
+  const [c] = clockStatus('2026-11-14T00:00:00.000Z', DEFAULT_PLAN, { stopSale: '2026-11-14T06:00:00.000Z' }, '2026-11-14T07:00:00.000Z');
+  assert.equal(c.status, 'met');
+  assert.equal(c.late, true);
+  const [ontime] = clockStatus('2026-11-14T00:00:00.000Z', DEFAULT_PLAN, { stopSale: '2026-11-14T03:00:00.000Z' }, '2026-11-14T07:00:00.000Z');
+  assert.equal(ontime.late, false);
+});

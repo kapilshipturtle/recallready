@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { DEFAULT_PLAN, buildCase, confirmLocation, markMilestone, caseSummary, closingRecord, customerNotice, regulatorSummary, applyConfirmations, caseOpenedLine } from '../src/lib/case.js';
+import { DEFAULT_PLAN, buildCase, confirmLocation, markMilestone, caseSummary, closingRecord, customerNotice, regulatorSummary, applyConfirmations, caseOpenedLine, stopSaleTitle, storedCase, fitsInProperty, caseForRead, openCheck } from '../src/lib/case.js';
 
 const catalog = {
   products: [{ key: 'P1', name: 'Harbor Lane Creamy Peanut Butter 16 oz', brand: 'Harbor Lane', sku: 'HL-PB-16', gtin: '02001234567893' }],
@@ -126,4 +126,62 @@ test('a mock recall customer notice says it must not be sent', () => {
   const drill = buildCase({ notice: drillNotice, matches, catalog, plan: DEFAULT_PLAN, now: T0, drill: true });
   assert.equal(customerNotice(drill, 'Harbor Lane Market').split('\n')[0], 'Mock recall test: do not send this notice to customers.');
   assert.ok(!/Mock recall test/.test(customerNotice(fresh(), 'Harbor Lane Market')));
+});
+
+test('extra units at one location do not hide a location that pulled nothing', () => {
+  let c = confirmLocation(fresh(), { locationKey: 'S12', units: 72, by: 'Mia', at: hours(1), note: '' });
+  c = confirmLocation(c, { locationKey: 'DC1', units: 0, by: 'Raj', at: hours(2), note: '' });
+  const s = caseSummary(c, hours(3));
+  assert.equal(s.recoveredUnits, 36);
+  assert.equal(s.expectedUnits, 48);
+  assert.equal(s.extraUnits, 36);
+  assert.equal(s.effectiveness, 75);
+  const text = closingRecord(c, hours(3));
+  assert.match(text, /Effectiveness 75%/);
+  assert.match(text, /More units pulled than expected at: Store 12 \(72 of 36\)/);
+});
+
+test('counts use the full order total when the stored order list is left out', () => {
+  const c = { ...fresh(), orders: [], ordersTotal: 300 };
+  assert.match(regulatorSummary(c), /Consumers who bought affected lots online: 300/);
+  assert.match(closingRecord(c, hours(1)), /Customers to notify: 300 orders/);
+});
+
+test('mock recall tasks say they are a test and ask for a count, not a pull', () => {
+  const loc = { name: 'Store 12', expectedUnits: 36, lotUnits: [{ code: '24B17', units: 36 }] };
+  assert.equal(stopSaleTitle(loc), 'Stop sale: pull 36 units of lot 24B17 at Store 12');
+  assert.equal(stopSaleTitle(loc, true), 'Mock recall: count 36 units of lot 24B17 at Store 12');
+  const drill = confirmLocation(buildCase({ notice, matches, catalog, plan: DEFAULT_PLAN, now: T0, drill: true }), { locationKey: 'S12', units: 36, by: 'Mia', at: hours(1), note: '' });
+  assert.match(closingRecord(drill, hours(2)), /36 found of 48 expected/);
+});
+
+test('a recall with online orders but no stock anywhere opens without stop-sale tasks', () => {
+  const soldOut = { ...catalog, stock: catalog.stock.map((r) => ({ ...r, units: 0 })) };
+  const c = buildCase({ notice, matches, catalog: soldOut, plan: DEFAULT_PLAN, now: T0 });
+  assert.deepEqual(c.locations, []);
+  assert.equal(openCheck(c).ok, true);
+  assert.equal(c.milestones.stopSale, T0);
+  assert.ok(c.audit.some((a) => /No stock at any location/.test(a.event)));
+  const nothing = buildCase({ notice, matches, catalog: { ...soldOut, orders: [] }, plan: DEFAULT_PLAN, now: T0 });
+  assert.equal(openCheck(nothing).ok, false);
+});
+
+test('a closed case is read exactly as it was closed', () => {
+  let c = confirmLocation(fresh(), { locationKey: 'S12', units: 36, by: 'Mia', at: hours(1), note: '' });
+  c = confirmLocation(c, { locationKey: 'DC1', units: 12, by: 'Raj', at: hours(2), note: '' });
+  const closed = markMilestone(c, 'closed', hours(3), 'Lee');
+  const read = caseForRead(closed, [{ locationKey: 'S12', units: 99, by: 'Mia', at: hours(4), note: '' }]);
+  assert.equal(read.audit.length, closed.audit.length);
+  assert.equal(read.locations.find((l) => l.key === 'S12').confirmedUnits, 36);
+  const open = caseForRead(fresh(), [{ locationKey: 'S12', units: 30, by: 'Mia', at: hours(1), note: '' }]);
+  assert.equal(open.locations.find((l) => l.key === 'S12').confirmedUnits, 30);
+});
+
+test('the stored case keeps only the order count, and very large cases are refused before anything is created', () => {
+  const stored = storedCase(fresh());
+  assert.equal(stored.orders, undefined);
+  assert.equal(stored.ordersTotal, 1);
+  assert.equal(fitsInProperty(stored), true);
+  const many = { ...stored, locations: Array.from({ length: 400 }, (_, i) => ({ ...stored.locations[0], key: `S${i}`, name: `Larkmere Market Store number ${i}` })) };
+  assert.equal(fitsInProperty(many), false);
 });

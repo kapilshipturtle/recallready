@@ -25,18 +25,22 @@ export function extractGtins(text) {
   for (const run of runs) {
     const groups = run.split(/[ -]/);
     for (let start = 0; start < groups.length; start += 1) {
+      // The longest valid code wins: "2 000000 00004 6" is the 13-digit GTIN, even though its
+      // first 12 digits also pass the check digit.
       let joined = '';
+      let best = null;
+      let bestEnd = start;
       for (let end = start; end < groups.length; end += 1) {
         joined += groups[end];
         if (joined.length > 14) break;
         if (joined.length >= 12) {
           const gtin = normalizeGtin(joined);
-          if (gtin) {
-            if (!found.includes(gtin)) found.push(gtin);
-            start = end;
-            break;
-          }
+          if (gtin) { best = gtin; bestEnd = end; }
         }
+      }
+      if (best) {
+        if (!found.includes(best)) found.push(best);
+        start = bestEnd;
       }
     }
   }
@@ -76,4 +80,31 @@ export function extractLots(text) {
 // Model or SKU numbers compared without spaces, dashes or case.
 export function normalizeModel(value) {
   return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+// Model numbers that follow "model", "item" or "SKU" (with optional "No.", "#", ":"). Each code
+// must contain a digit, so ordinary words after "model" or "item" are never taken.
+const MODEL_KEYWORD = /\b(?:models?|items?|skus?)\b(?:\s*(?:#|nos?\.?|numbers?))?\s*[:#]?\s*/gi;
+const MODEL_TOKEN = /^(?=[A-Za-z-]*\d)[A-Za-z0-9][A-Za-z0-9-]{2,}/;
+const MODEL_SEPARATOR = /^\s*(?:,|;|\/|\band\b|\bor\b)\s*/i;
+
+export function extractModels(text) {
+  const s = String(text || '');
+  const out = [];
+  MODEL_KEYWORD.lastIndex = 0;
+  let m;
+  while ((m = MODEL_KEYWORD.exec(s))) {
+    let rest = s.slice(MODEL_KEYWORD.lastIndex);
+    for (;;) {
+      const token = rest.match(MODEL_TOKEN);
+      if (!token) break;
+      const model = normalizeModel(token[0]);
+      if (model.length >= 3 && !out.includes(model)) out.push(model);
+      rest = rest.slice(token[0].length);
+      const sep = rest.match(MODEL_SEPARATOR);
+      if (!sep) break;
+      rest = rest.slice(sep[0].length);
+    }
+  }
+  return out;
 }

@@ -64,6 +64,31 @@ const App = () => {
     await load();
   };
 
+  // The scan runs in the background; wait for a result newer than the request.
+  const scan = async () => {
+    setBusy('scan');
+    setBusyArea('scan');
+    setMessage(null);
+    const result = await invoke('scanNow');
+    if (!result.ok) {
+      setBusy('');
+      setMessage({ appearance: 'error', text: result.message });
+      return;
+    }
+    for (let i = 0; i < 60; i += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+      const next = await invoke('getAdminState');
+      if (next.ok && next.radar && String(next.radar.at) >= String(result.requestedAt)) {
+        setState(next);
+        setBusy('');
+        setMessage({ appearance: 'success', text: 'Done.' });
+        return;
+      }
+    }
+    setBusy('');
+    setMessage({ appearance: 'warning', text: 'The scan is still running. Its result appears here when it finishes.' });
+  };
+
   if (!state) return <Spinner label="Loading RecallReady settings" />;
   if (!state.ok) return <SectionMessage appearance="error" title="Settings could not load"><Text>{state.message}</Text></SectionMessage>;
   if (!draft) return <Spinner label="Loading RecallReady settings" />;
@@ -152,7 +177,7 @@ const App = () => {
             <Label labelFor={`source-${s.key}`}>{s.label}</Label>
           </Inline>
         ))}
-        <Box><Button isDisabled={Boolean(busy)} onClick={() => act('scan', 'scanNow')}>{busy === 'scan' ? 'Scanning...' : 'Scan now'}</Button></Box>
+        <Box><Button isDisabled={Boolean(busy)} onClick={scan}>{busy === 'scan' ? 'Scanning...' : 'Scan now'}</Button></Box>
         {message && busyArea === 'scan' && <SectionMessage appearance={message.appearance}><Text>{message.text}</Text></SectionMessage>}
         {state.radar?.errors?.length > 0 && <SectionMessage appearance="warning" title="Some sources could not be read"><Text>{state.radar.errors.join(' ')}</Text></SectionMessage>}
         {state.radar && <Text>Last scan: {String(state.radar.at || '').slice(0, 16).replace('T', ' ')} UTC. Checked {state.radar.checked} notices, opened {state.radar.opened} cases, {state.radar.queued} for review.</Text>}

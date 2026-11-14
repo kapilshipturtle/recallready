@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SAMPLE, SAMPLE_COMPANY, FICTIONAL_BRANDS } from '../src/lib/sample.js';
+import { SAMPLE, SAMPLE_COMPANY, FICTIONAL_BRANDS, sampleLoadDecision } from '../src/lib/sample.js';
 import { normalizeGtin } from '../src/lib/ids.js';
 
 test('company and sizes', () => {
@@ -50,4 +50,12 @@ test('the demo product has stock at several locations and online orders', () => 
   const rows = SAMPLE.stock.filter((s) => s.lotKey === lot.key);
   assert.ok(rows.length >= 5);
   assert.ok(SAMPLE.orders.filter((o) => o.lotKey === lot.key).length >= 3);
+});
+
+test('the sample only goes into an empty catalog, or resumes its own load', () => {
+  assert.equal(sampleLoadDecision({ productCount: 0, mapSize: 0 }).ok, true);
+  assert.equal(sampleLoadDecision({ productCount: 12, mapSize: 40 }).ok, true);
+  const refused = sampleLoadDecision({ productCount: 24, mapSize: 0 });
+  assert.equal(refused.ok, false);
+  assert.match(refused.message, /already has products/);
 });

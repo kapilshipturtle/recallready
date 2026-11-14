@@ -19,10 +19,10 @@ function Clocks({ clocks }) {
     <Stack space="space.075">
       {clocks.map((c) => (
         <Inline key={c.key} space="space.100" alignBlock="center">
-          <Lozenge appearance={c.status === 'met' ? 'success' : c.status === 'overdue' ? 'removed' : 'inprogress'}>
-            {c.status === 'met' ? 'Met' : c.status === 'overdue' ? 'Overdue' : 'Due'}
+          <Lozenge appearance={c.status === 'met' ? (c.late ? 'moved' : 'success') : c.status === 'overdue' ? 'removed' : 'inprogress'}>
+            {c.status === 'met' ? (c.late ? 'Met late' : 'Met') : c.status === 'overdue' ? 'Overdue' : 'Due'}
           </Lozenge>
-          <Text>{c.label} (target {c.hours} h): {c.status === 'met' ? `met ${time(c.metAt)}` : `due ${time(c.dueAt)}`}</Text>
+          <Text>{c.label} (target {c.hours} h): {c.status === 'met' ? `${c.late ? 'met late' : 'met'} ${time(c.metAt)}` : `due ${time(c.dueAt)}`}</Text>
         </Inline>
       ))}
     </Stack>
@@ -33,6 +33,9 @@ function CaseView({ state, act, busy }) {
   const c = state.caseData;
   const s = state.summary;
   const allConfirmed = s.locationsConfirmed === s.locationsTotal;
+  const verb = c.drill ? 'found' : 'pulled';
+  const orders = state.orders;
+  const ordersTotal = orders ? orders.length : (c.ordersTotal ?? 0);
   return (
     <Stack space="space.250">
       <Stack space="space.075">
@@ -46,14 +49,15 @@ function CaseView({ state, act, busy }) {
       </Stack>
 
       <Stack space="space.075">
-        <Heading size="xsmall">Stop sale</Heading>
+        <Heading size="xsmall">{c.drill ? 'Mock recall count' : 'Stop sale'}</Heading>
+        {c.locations.length === 0 ? <Text>No location holds stock of the affected lots, so there is nothing to pull from sale.</Text> : (<>
         <ProgressBar value={s.locationsTotal ? s.locationsConfirmed / s.locationsTotal : 0} appearance={allConfirmed ? 'success' : 'default'} ariaLabel="Locations confirmed" />
-        <Text>{s.locationsConfirmed} of {s.locationsTotal} locations confirmed. {s.recoveredUnits} of {s.expectedUnits} units pulled (effectiveness {percent(s.effectiveness)}).</Text>
+        <Text>{s.locationsConfirmed} of {s.locationsTotal} locations confirmed. {s.recoveredUnits} of {s.expectedUnits} units {verb} (effectiveness {percent(s.effectiveness)}).{s.extraUnits ? ` ${s.extraUnits} more than expected.` : ''}</Text>
         <DynamicTable
           head={{ cells: [
             { key: 'loc', content: 'Location', width: 34 },
             { key: 'exp', content: 'Expected', width: 14 },
-            { key: 'got', content: 'Pulled', width: 14 },
+            { key: 'got', content: c.drill ? 'Found' : 'Pulled', width: 14 },
             { key: 'who', content: 'Confirmed', width: 38 },
           ] }}
           rows={c.locations.map((l) => ({
@@ -71,6 +75,7 @@ function CaseView({ state, act, busy }) {
             ],
           }))}
         />
+        </>)}
       </Stack>
 
       <Stack space="space.075">
@@ -80,8 +85,8 @@ function CaseView({ state, act, busy }) {
 
       <Stack space="space.075">
         <Heading size="xsmall">Customers</Heading>
-        <Text>{c.orders.length} online order{c.orders.length === 1 ? '' : 's'} contain affected lots{c.ordersTotal ? ` (${c.ordersTotal} in total)` : ''}.</Text>
-        {c.orders.length > 0 && <Text>{c.orders.slice(0, 8).map((o) => `${o.orderNumber} ${o.customerName}`).join(', ')}{c.orders.length > 8 ? ', ...' : ''}</Text>}
+        <Text>{ordersTotal} online order{ordersTotal === 1 ? '' : 's'} contain affected lots.</Text>
+        {orders && orders.length > 0 && <Text>{orders.slice(0, 8).map((o) => `${o.orderNumber} ${o.customerName}`).join(', ')}{orders.length > 8 ? ', ...' : ''}</Text>}
         <Label labelFor="notice">Customer notice (copy into your email or messaging tool)</Label>
         <TextArea id="notice" isReadOnly value={state.customerNotice} />
         {!c.milestones.customerNotice && <Box><Button isDisabled={Boolean(busy)} onClick={() => act('markMilestoneHere', { key: 'customerNotice' })}>Mark customer notice ready</Button></Box>}
@@ -111,27 +116,32 @@ function LocationView({ state, act, busy }) {
   const [units, setUnits] = useState(String(l?.confirmedUnits ?? l?.expectedUnits ?? ''));
   const [note, setNote] = useState(l?.note || '');
   if (!l) return <SectionMessage appearance="warning"><Text>The recall case for this task could not be found.</Text></SectionMessage>;
+  const verb = state.drill ? 'found' : 'pulled';
   return (
     <Stack space="space.200">
       <Inline space="space.075">{state.drill && <Lozenge appearance="new">Mock recall</Lozenge>}<Text>Part of <Link href={`/browse/${state.caseKey}`}>{state.caseKey}</Link></Text></Inline>
-      <Text><Strong>{l.name}</Strong>: pull {l.expectedUnits} units from sale.</Text>
+      {state.drill
+        ? <Text><Strong>{l.name}</Strong>: find and count {l.expectedUnits} units. This is a test: do not take them off sale.</Text>
+        : <Text><Strong>{l.name}</Strong>: pull {l.expectedUnits} units from sale.</Text>}
       <Stack space="space.025">
         {(l.lotUnits || []).map((x) => <Text key={x.lotKey}>Lot {x.code}: {x.units} units expected</Text>)}
       </Stack>
       {l.confirmedUnits !== null && (
         <SectionMessage appearance={l.overRecovered ? 'warning' : 'success'}>
-          <Text>Confirmed by {l.confirmedBy} at {time(l.confirmedAt)}: {l.confirmedUnits} units pulled.{l.overRecovered ? ' That is more than expected; check for stock from other lots.' : ''}</Text>
+          <Text>Confirmed by {l.confirmedBy} at {time(l.confirmedAt)}: {l.confirmedUnits} units {verb}.{l.overRecovered ? ' That is more than expected; check for stock from other lots.' : ''}</Text>
         </SectionMessage>
       )}
-      <Label labelFor="units">Units pulled</Label>
+      {state.closed ? <SectionMessage appearance="information"><Text>This recall is closed, so the confirmation can no longer change.</Text></SectionMessage> : (<>
+      <Label labelFor="units">{state.drill ? 'Units found' : 'Units pulled'}</Label>
       <Box xcss={numberStyle}><Textfield id="units" type="number" value={units} onChange={(e) => setUnits(e.target.value)} /></Box>
       <Label labelFor="note">Note (optional)</Label>
       <TextArea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Example: 2 units found in the back room" />
       <Box>
         <Button appearance="primary" isDisabled={Boolean(busy) || units === ''} onClick={() => act('confirmHere', { units: Number(units), note })}>
-          {busy === 'confirmHere' ? 'Saving...' : l.confirmedUnits === null ? 'Confirm stop sale' : 'Update confirmation'}
+          {busy === 'confirmHere' ? 'Saving...' : l.confirmedUnits !== null ? 'Update confirmation' : state.drill ? 'Confirm count' : 'Confirm stop sale'}
         </Button>
       </Box>
+      </>)}
     </Stack>
   );
 }

@@ -5,7 +5,7 @@ import { listProjects } from '../platform/jira.js';
 import { getSettings, saveSettings, getState } from '../platform/settings.js';
 import { runSetup, startSampleLoad, catalogStatus, NO_ASSETS } from '../services/setup.js';
 import { DEFAULT_PLAN } from '../lib/case.js';
-import { runScan } from '../services/radar.js';
+import { queueRadarScan } from '../services/radar.js';
 import { resultFromError } from '../lib/errors.js';
 
 async function isJiraAdmin() {
@@ -61,7 +61,8 @@ export function defineAdmin(resolver) {
       await requireAdmin();
       const settings = await getSettings();
       if (!settings.schemaIds) return { ok: false, message: 'Create the catalog first.' };
-      await startSampleLoad();
+      const started = await startSampleLoad();
+      if (!started.ok) return started;
       return { ok: true, sample: await getState('sample-progress') };
     } catch (error) {
       return fail(error);
@@ -99,7 +100,8 @@ export function defineAdmin(resolver) {
   resolver.define('scanNow', async () => {
     try {
       await requireAdmin();
-      return { ok: true, radar: await runScan({ who: 'user' }) };
+      // The scan reads hundreds of notices; it runs in the background queue, not in this request.
+      return { ok: true, ...(await queueRadarScan()) };
     } catch (error) {
       return fail(error);
     }

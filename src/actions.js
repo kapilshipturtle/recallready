@@ -5,7 +5,8 @@
  * permissions. Inputs are top-level payload keys; Rovo passes the work item on screen in
  * payload.context.jira.
  */
-import { checkProduct, getCase, listOpenRecalls, checkNotice, startRecall } from './services/recalls.js';
+import { checkProduct, getCase, listOpenRecalls, checkNotice, startRecall, ordersForLots } from './services/recalls.js';
+import { productAnswer } from './lib/answers.js';
 import { caseSummary, customerNotice, regulatorSummary } from './lib/case.js';
 import { getSettings } from './platform/settings.js';
 import { noticeRef } from './lib/notices.js';
@@ -34,11 +35,8 @@ async function caseFor(key) {
 export const checkProductAction = safe(async (payload) => {
   const query = String(payload?.query || '').trim();
   if (!query) return { error: 'Give a product name, GTIN, SKU or lot code.' };
-  const r = await checkProduct(query, 'user');
-  const answer = r.openCases.length
-    ? `Yes. Open recall${r.openCases.length === 1 ? '' : 's'}: ${r.openCases.map((c) => `${c.issueKey} (lots ${c.lots.join(', ')})`).join('; ')}. Do not sell or ship it.`
-    : (r.products.length || r.lots.length ? 'No open recall covers it.' : 'It is not in the RecallReady catalog.');
-  return { query, answer, productsFound: r.products, lotsFound: r.lots, openRecalls: r.openCases };
+  const r = await checkProduct(query);
+  return { query, answer: productAnswer(r), productsFound: r.products, lotsFound: r.lots, openRecalls: r.openCases, checkedEveryOpenRecall: r.complete };
 });
 
 // GET: progress of one recall: who has confirmed, who has not, clocks, orders.
@@ -62,8 +60,8 @@ export const getRecallStatusAction = safe(async (payload) => {
     effectivenessPercent: s.effectiveness,
     waitingFor: d.locations.filter((l) => l.confirmedUnits === null).map((l) => ({ location: l.name, expectedUnits: l.expectedUnits, task: l.subtaskKey })),
     confirmedBy: d.locations.filter((l) => l.confirmedUnits !== null).map((l) => ({ location: l.name, units: l.confirmedUnits, by: l.confirmedBy, at: l.confirmedAt, note: l.note })),
-    clocks: s.clocks.map((c) => ({ step: c.label, status: c.status, dueAt: c.dueAt, metAt: c.metAt })),
-    onlineOrders: d.ordersTotal || d.orders.length,
+    clocks: s.clocks.map((c) => ({ step: c.label, status: c.late ? 'met late' : c.status, dueAt: c.dueAt, metAt: c.metAt })),
+    onlineOrders: Number.isFinite(d.ordersTotal) ? d.ordersTotal : (d.orders || []).length,
     closed: Boolean(d.milestones.closed),
   };
 });
@@ -104,9 +102,11 @@ export const getCustomerNoticeAction = safe(async (payload) => {
   const found = await caseFor(key);
   if (!found) return { error: `${key} is not a RecallReady recall case.` };
   const settings = await getSettings();
+  const lotCode = Object.fromEntries(found.caseData.lots.map((l) => [l.key, l.code]));
+  const orders = await ordersForLots(settings.schemaIds, found.caseData.lots.map((l) => l.key));
   return {
     key: found.issueKey,
-    affectedOrders: found.caseData.orders.map((o) => ({ order: o.orderNumber, customer: o.customerName, email: o.customerEmail, units: o.units, lot: o.lotCode })),
+    affectedOrders: orders.map((o) => ({ order: o.orderNumber, customer: o.customerName, email: o.customerEmail, units: o.units, lot: lotCode[o.lotKey] })),
     customerNotice: customerNotice(found.caseData, settings.company || 'our company'),
     regulatorSummary: regulatorSummary(found.caseData),
   };

@@ -45,6 +45,16 @@ export function buildCase({ notice, matches, catalog, plan = DEFAULT_PLAN, now, 
       subtaskKey: null,
     }));
 
+  const orders = (catalog.orders || [])
+    .filter((o) => lotKeys.has(o.lotKey))
+    .map((o) => ({ key: o.key, orderNumber: o.orderNumber, units: Number(o.units), customerName: o.customerName, customerEmail: o.customerEmail, lotCode: lotCode[o.lotKey] }));
+  const audit = [{ at: now, by: 'RecallReady', event: drill ? 'Mock recall opened' : `Recall opened from ${noticeRef(notice)}` }];
+  const milestones = { stopSale: null, customerNotice: null, regulatorSummary: null, effectiveness: null, closed: null };
+  // A lot that is sold out everywhere still needs its online buyers told; there is nothing to pull.
+  if (!locations.length && orders.length) {
+    milestones.stopSale = now;
+    audit.push({ at: now, by: 'RecallReady', event: 'No stock at any location: stop sale not needed' });
+  }
   return {
     version: 1,
     drill: Boolean(drill),
@@ -54,12 +64,40 @@ export function buildCase({ notice, matches, catalog, plan = DEFAULT_PLAN, now, 
     products: (catalog.products || []).filter((p) => productKeys.has(p.key)).map((p) => ({ key: p.key, name: p.name, gtin: p.gtin, brand: p.brand })),
     lots: lots.map((l) => ({ key: l.key, code: l.code, productKey: l.productKey, bestBy: l.bestBy })),
     locations,
-    orders: (catalog.orders || [])
-      .filter((o) => lotKeys.has(o.lotKey))
-      .map((o) => ({ key: o.key, orderNumber: o.orderNumber, units: Number(o.units), customerName: o.customerName, customerEmail: o.customerEmail, lotCode: lotCode[o.lotKey] })),
-    milestones: { stopSale: null, customerNotice: null, regulatorSummary: null, effectiveness: null, closed: null },
-    audit: [{ at: now, by: 'RecallReady', event: drill ? 'Mock recall opened' : `Recall opened from ${noticeRef(notice)}` }],
+    orders,
+    ordersTotal: orders.length,
+    milestones,
+    audit,
   };
+}
+
+// Whether a recall can be opened at all: it needs stock somewhere or online buyers to tell.
+export function openCheck(caseData) {
+  if (caseData.locations.length || ordersCount(caseData)) return { ok: true };
+  return { ok: false, message: 'None of the chosen lots has stock at any location or any online order.' };
+}
+
+const ordersCount = (c) => (Number.isFinite(c.ordersTotal) ? c.ordersTotal : (c.orders || []).length);
+const MAX_PROPERTY_CHARS = 30000; // Jira work item properties are limited to 32 KB
+const cut = (text, max) => String(text || '').slice(0, max);
+
+// What is stored on the case work item. The order list stays in Assets (read when needed), so
+// the property only grows with the number of locations.
+export function storedCase(caseData) {
+  const { orders, ...rest } = caseData;
+  const n = rest.notice || {};
+  return {
+    ...rest,
+    notice: { ...n, title: cut(n.title, 200), reason: cut(n.reason, 400), firm: cut(n.firm, 200) },
+    ordersTotal: ordersCount(caseData),
+  };
+}
+
+export const fitsInProperty = (stored) => JSON.stringify(stored).length <= MAX_PROPERTY_CHARS;
+
+// A closed case is read exactly as it was closed; an open one merges the latest confirmations.
+export function caseForRead(stored, confirmations) {
+  return stored?.milestones?.closed ? stored : applyConfirmations(stored, confirmations);
 }
 
 export function confirmLocation(caseData, { locationKey, units, by, at, note }) {
@@ -90,7 +128,9 @@ export function markMilestone(caseData, key, at, by) {
 
 export function caseSummary(caseData, now) {
   const expectedUnits = caseData.locations.reduce((s, l) => s + l.expectedUnits, 0);
-  const recoveredUnits = caseData.locations.reduce((s, l) => s + (l.confirmedUnits || 0), 0);
+  // Extra units at one location must not hide a location that pulled nothing.
+  const recoveredUnits = caseData.locations.reduce((s, l) => s + Math.min(l.confirmedUnits || 0, l.expectedUnits), 0);
+  const extraUnits = caseData.locations.reduce((s, l) => s + Math.max(0, (l.confirmedUnits || 0) - l.expectedUnits), 0);
   const locationsTotal = caseData.locations.length;
   const locationsConfirmed = caseData.locations.filter((l) => l.confirmedUnits !== null).length;
   const clocks = clockStatus(caseData.startedAt, caseData.plan, caseData.milestones, now);
@@ -98,6 +138,7 @@ export function caseSummary(caseData, now) {
   return {
     expectedUnits,
     recoveredUnits,
+    extraUnits,
     locationsTotal,
     locationsConfirmed,
     percent: locationsTotal ? Math.round((locationsConfirmed / locationsTotal) * 100) : 0,
@@ -119,13 +160,14 @@ export function closingRecord(caseData, now) {
     `Products: ${productLine(caseData)}`,
     `Lots: ${lotLine(caseData)}`,
     `Locations: ${s.locationsConfirmed} of ${s.locationsTotal} confirmed`,
-    `Units: ${s.recoveredUnits} recovered of ${s.expectedUnits} expected. Effectiveness ${percentText(s.effectiveness)}`,
+    `Units: ${s.recoveredUnits} ${caseData.drill ? 'found' : 'recovered'} of ${s.expectedUnits} expected. Effectiveness ${percentText(s.effectiveness)}`,
   ];
-  const over = caseData.locations.filter((l) => l.overRecovered);
-  if (over.length) lines.push(`More units pulled than expected at: ${over.map((l) => `${l.name} (${l.confirmedUnits} of ${l.expectedUnits})`).join(', ')}`);
-  lines.push(`Customers to notify: ${caseData.orders.length} order${caseData.orders.length === 1 ? '' : 's'}`);
+  const over = caseData.locations.filter((l) => l.confirmedUnits !== null && l.confirmedUnits > l.expectedUnits);
+  if (over.length) lines.push(`More units ${caseData.drill ? 'found' : 'pulled'} than expected at: ${over.map((l) => `${l.name} (${l.confirmedUnits} of ${l.expectedUnits})`).join(', ')}`);
+  const orders = ordersCount(caseData);
+  lines.push(`Customers to notify: ${orders} order${orders === 1 ? '' : 's'}`);
   lines.push('Response plan:');
-  for (const c of s.clocks) lines.push(`- ${c.label} (target ${c.hours} h): ${c.status === 'met' ? `met at ${timeText(c.metAt)}` : c.status === 'overdue' ? 'missed' : 'not met yet'}`);
+  for (const c of s.clocks) lines.push(`- ${c.label} (target ${c.hours} h): ${c.status === 'met' ? `${c.late ? 'met late' : 'met'} at ${timeText(c.metAt)}` : c.status === 'overdue' ? 'missed' : 'not met yet'}`);
   lines.push('Timeline:');
   // Sub-task confirmations are merged after stored events, so sort; the sort is stable.
   const timeline = [...caseData.audit].sort((a, b) => String(a.at).localeCompare(String(b.at)));
@@ -166,7 +208,7 @@ export function regulatorSummary(caseData) {
     `Lots: ${lotLine(caseData)}`,
     caseData.notice.reason ? `Reason: ${caseData.notice.reason}` : '',
     `Distribution: ${s.expectedUnits} units at ${s.locationsTotal} location${s.locationsTotal === 1 ? '' : 's'} (${caseData.locations.map((l) => `${l.name} ${l.expectedUnits}`).join(', ')})`,
-    `Consumers who bought affected lots online: ${caseData.orders.length}`,
+    `Consumers who bought affected lots online: ${ordersCount(caseData)}`,
     `Case opened: ${timeText(caseData.startedAt)}`,
   ].filter(Boolean).join('\n');
 }
@@ -193,7 +235,9 @@ export function caseTitle(caseData) {
   return `${caseData.drill ? 'Mock recall' : 'Recall'}: ${names} (${lotsText(caseData.lots.map((l) => l.code))})`.slice(0, 250);
 }
 
-export function stopSaleTitle(location) {
+// A mock recall asks each location to find and count the units, not to take them off sale.
+export function stopSaleTitle(location, drill = false) {
   const codes = [...new Set((location.lotUnits || []).map((l) => l.code))];
-  return `Stop sale: pull ${location.expectedUnits} units of ${lotsText(codes)} at ${location.name}`.slice(0, 250);
+  const action = drill ? 'Mock recall: count' : 'Stop sale: pull';
+  return `${action} ${location.expectedUnits} units of ${lotsText(codes)} at ${location.name}`.slice(0, 250);
 }

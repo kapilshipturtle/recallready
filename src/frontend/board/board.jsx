@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import ForgeReconciler, {
-  Box, Button, DynamicTable, Heading, Inline, Label, Link, Lozenge, ProgressBar, SectionMessage,
+  Box, Button, Checkbox, DynamicTable, Heading, Inline, Label, Link, Lozenge, ProgressBar, SectionMessage,
   Select, Spinner, Stack, Strong, Text, TextArea, xcss,
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
@@ -42,8 +42,11 @@ const App = () => {
   const [drill, setDrill] = useState({ product: null, lots: [] });
   const [busy, setBusy] = useState('');
   const [flash, setFlash] = useState(null);
-  // Brand-only (Low) matches stay collapsed until asked for, as the design says.
+  // Matches where only the brand was found stay collapsed until asked for, as the design says.
   const [showLow, setShowLow] = useState({ check: false, queue: false });
+  // Products picked for one recall from the checked notice, and those already started.
+  const [selected, setSelected] = useState([]);
+  const [startedKeys, setStartedKeys] = useState({});
 
   const load = async () => {
     const result = await invoke('getBoard');
@@ -63,17 +66,29 @@ const App = () => {
     setFlash(result.ok
       ? { appearance: 'success', text: `Opened ${result.issueKey} with ${result.locations} stop-sale task${result.locations === 1 ? '' : 's'}.`, url: result.url }
       : { appearance: 'error', text: result.message });
-    if (result.ok) { setCheck(null); await load(); }
+    if (result.ok) await load();
+    return result;
   };
+
+  // One recall for every product ticked in the checked notice; the other matches stay listed.
+  const startChecked = async () => {
+    const keys = [...selected];
+    const result = await started('start', 'startFromNotice', { text: noticeText, productKeys: keys });
+    if (result.ok) {
+      setStartedKeys({ ...startedKeys, ...Object.fromEntries(keys.map((k) => [k, result.issueKey])) });
+      setSelected([]);
+    }
+  };
+  const toggle = (key) => setSelected(selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key]);
 
   if (!board) return <Spinner label="Loading recall board" />;
   if (!board.ok) return <SectionMessage appearance="error" title="The board could not load"><Text>{board.message}</Text></SectionMessage>;
 
-  const checkShown = (check?.matches || []).filter((m) => showLow.check || m.confidence !== 'Low');
-  const checkLow = (check?.matches || []).filter((m) => m.confidence === 'Low').length;
+  const checkShown = (check?.matches || []).filter((m) => showLow.check || !m.brandOnly);
+  const checkLow = (check?.matches || []).filter((m) => m.brandOnly).length;
   const queueAll = board.queue.flatMap((item) => item.matches.map((m) => ({ item, m })));
-  const queueRows = queueAll.filter(({ m }) => showLow.queue || m.confidence !== 'Low');
-  const queueLow = queueAll.length - queueAll.filter(({ m }) => m.confidence !== 'Low').length;
+  const queueRows = queueAll.filter(({ m }) => showLow.queue || !m.brandOnly);
+  const queueLow = queueAll.filter(({ m }) => m.brandOnly).length;
   const lotOptions = (options?.lots || []).filter((l) => l.productKey === drill.product?.value).map((l) => ({ label: `${l.code}${l.bestBy ? ` (best by ${l.bestBy})` : ''}`, value: l.key }));
 
   return (
@@ -143,7 +158,7 @@ const App = () => {
             <Text>Paste a supplier notice, an email or a regulator alert. RecallReady checks it against every product, GTIN, SKU and lot in your catalog.</Text>
             <TextArea id="notice" value={noticeText} onChange={(e) => setNoticeText(e.target.value)} placeholder="Example: Quillbrook Farms is recalling Larkmere Creamy Peanut Butter 16 oz, lot 26I01A, because of possible Salmonella." />
             <Box>
-              <Button isDisabled={Boolean(busy)} onClick={async () => { setBusy('check'); setFlash(null); const r = await invoke('checkNoticeText', { text: noticeText }); setBusy(''); if (r.ok) { setCheck(r); setShowLow({ ...showLow, check: false }); } else setFlash({ appearance: 'error', text: r.message }); }}>
+              <Button isDisabled={Boolean(busy)} onClick={async () => { setBusy('check'); setFlash(null); const r = await invoke('checkNoticeText', { text: noticeText }); setBusy(''); if (r.ok) { setCheck(r); setShowLow({ ...showLow, check: false }); setStartedKeys({}); setSelected(r.matches.filter((m) => m.confidence === 'High').map((m) => m.productKey)); } else setFlash({ appearance: 'error', text: r.message }); }}>
                 {busy === 'check' ? 'Checking...' : 'Check against catalog'}
               </Button>
             </Box>
@@ -152,24 +167,33 @@ const App = () => {
             ) : checkShown.length > 0 && (
               <DynamicTable
                 head={{ cells: [
+                  { key: 'pick', content: '', width: 12 },
                   { key: 'product', content: 'Product', width: 28 },
                   { key: 'confidence', content: 'Match', width: 10 },
                   { key: 'lots', content: 'Lots', width: 16 },
-                  { key: 'why', content: 'Why', width: 30 },
-                  { key: 'action', content: '', width: 16 },
+                  { key: 'why', content: 'Why', width: 36 },
                 ] }}
                 rows={checkShown.map((m) => ({
                   key: m.productKey,
                   cells: [
+                    { key: 'pick', content: startedKeys[m.productKey]
+                      ? <Lozenge appearance="success">{startedKeys[m.productKey]}</Lozenge>
+                      : <Checkbox label="Recall" isChecked={selected.includes(m.productKey)} isDisabled={Boolean(busy)} onChange={() => toggle(m.productKey)} /> },
                     { key: 'product', content: m.productName },
                     { key: 'confidence', content: <Lozenge appearance={CONFIDENCE[m.confidence]}>{m.confidence}</Lozenge> },
                     { key: 'lots', content: m.lotCodes.join(', ') },
                     { key: 'why', content: m.evidence.join('. ') },
-                    { key: 'action', content: <Button appearance={m.confidence === 'High' ? 'primary' : 'default'} isDisabled={Boolean(busy)} onClick={() => started('start', 'startFromNotice', { text: noticeText, productKey: m.productKey })}>{busy === 'start' ? 'Starting...' : 'Start recall'}</Button> },
                   ],
                 }))}
               />
             ))}
+            {check && check.matches.length > 0 && (
+              <Box>
+                <Button appearance="primary" isDisabled={Boolean(busy) || !selected.length} onClick={startChecked}>
+                  {busy === 'start' ? 'Starting...' : selected.length > 1 ? `Start one recall for ${selected.length} products` : 'Start recall'}
+                </Button>
+              </Box>
+            )}
             {checkLow > 0 && (
               <Box><Button appearance="subtle" onClick={() => setShowLow({ ...showLow, check: !showLow.check })}>{showLow.check ? 'Hide' : 'Show'} {checkLow} brand-only match{checkLow === 1 ? '' : 'es'}</Button></Box>
             )}
@@ -213,8 +237,8 @@ const App = () => {
                 { key: 'why', content: m.evidence.join('. ') },
                 { key: 'action', content: (
                   <Inline space="space.050">
-                    <Button isDisabled={Boolean(busy)} onClick={() => started('review', 'startFromReview', { noticeId: item.notice.id, productKey: m.productKey })}>Start recall</Button>
-                    <Button appearance="subtle" isDisabled={Boolean(busy)} onClick={async () => { await invoke('dismissReview', { noticeId: item.notice.id }); await load(); }}>Dismiss</Button>
+                    <Button isDisabled={Boolean(busy)} onClick={() => started('review', 'startFromReview', { noticeId: item.notice.id, productKeys: [m.productKey] })}>Start recall</Button>
+                    <Button appearance="subtle" isDisabled={Boolean(busy)} onClick={async () => { const r = await invoke('dismissReview', { noticeId: item.notice.id, productKeys: [m.productKey] }); if (!r.ok) setFlash({ appearance: 'error', text: r.message }); await load(); }}>Dismiss</Button>
                   </Inline>
                 ) },
               ],

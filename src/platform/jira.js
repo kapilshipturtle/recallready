@@ -29,6 +29,24 @@ export async function listProjects(who = 'user') {
 
 export const createIssue = (who, fields) => call(who, route`/rest/api/3/issue`, { method: 'POST', body: JSON.stringify({ fields }) });
 
+// Up to 50 work items in one call, each with its own properties. Created items come back in the
+// order they were sent; any element error fails the whole call here.
+export async function createIssues(who, issueUpdates) {
+  const data = await call(who, route`/rest/api/3/issue/bulk`, { method: 'POST', body: JSON.stringify({ issueUpdates }) });
+  const errors = data?.errors || [];
+  if (errors.length) {
+    const first = errors[0]?.elementErrors;
+    const detail = [...(first?.errorMessages || []), ...Object.values(first?.errors || {})].join(' ');
+    throw new Error(`Jira could not create ${errors.length} of ${issueUpdates.length} tasks${detail ? `: ${detail}` : ''}`);
+  }
+  return data?.issues || [];
+}
+
+export async function canCreateIn(projectKey, who = 'user') {
+  const data = await call(who, route`/rest/api/3/mypermissions?projectKey=${projectKey}&permissions=${'CREATE_ISSUES'}`);
+  return Boolean(data?.permissions?.CREATE_ISSUES?.havePermission);
+}
+
 export const setProperty = (who, issueKey, value) => call(who, route`/rest/api/3/issue/${issueKey}/properties/recallready`, { method: 'PUT', body: JSON.stringify(value) });
 
 export async function getProperty(who, issueKey) {

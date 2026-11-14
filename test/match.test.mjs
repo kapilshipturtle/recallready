@@ -29,11 +29,19 @@ test('GTIN equality is High with evidence and all lots', () => {
   assert.deepEqual(m.lotKeys, ['L1a', 'L1b', 'L1c']);
 });
 
-test('model equal to SKU is High', () => {
-  const n = { ...notice('Popcorn maker recall'), models: ['BWPM200'] };
+test('model equal to SKU with the brand named is High', () => {
+  const n = { ...notice('Brightwave popcorn maker recall'), models: ['BWPM200'] };
   const [m] = matchNotice(n, catalog);
   assert.equal(m.productKey, 'P2');
   assert.equal(m.confidence, 'High');
+});
+
+test('model equal to SKU without the brand is only Medium', () => {
+  const n = { ...notice('Popcorn maker recall'), models: ['BWPM200'] };
+  const [m] = matchNotice(n, catalog);
+  assert.equal(m.productKey, 'P2');
+  assert.equal(m.confidence, 'Medium');
+  assert.ok(m.evidence.some((e) => /brand is not named/.test(e)), m.evidence.join(' | '));
 });
 
 test('brand + name + listed lots is High, scoped to those lots', () => {
@@ -69,4 +77,26 @@ test('results are ordered High, Medium, Low', () => {
 test('nameSimilarity is the share of product words found', () => {
   assert.equal(nameSimilarity('Creamy Peanut Butter 16 oz', 'Gluten free creamy peanut butter spread'), 1);
   assert.equal(nameSimilarity('Organic Whole Milk', 'Organic Peanut Butter'), 1 / 3);
+});
+
+test('a pasted notice that names the model is a High match', () => {
+  const [m] = matchNotice(notice('Brightwave recalls model BW-PM200 popcorn makers because of a burn hazard'), catalog);
+  assert.equal(m.productKey, 'P2');
+  assert.equal(m.confidence, 'High');
+});
+
+test('a GTIN match whose listed lots are none of ours goes to review with the reason', () => {
+  const [m] = matchNotice(notice('Recall of GTIN 2001234567893 lots 99Z01X and 99Z02X only'), catalog);
+  assert.equal(m.productKey, 'P1');
+  assert.equal(m.confidence, 'Medium');
+  assert.ok(m.evidence.some((e) => /99Z01X/.test(e) && /none of them/.test(e)), m.evidence.join(' | '));
+});
+
+test('only matches without any product word are flagged brand-only', () => {
+  const ms = matchNotice(notice('Harbor Lane recalls its crunchy almond butter; Harbor Lane also recalls sparkling water'), catalog);
+  const pb = ms.find((m) => m.productKey === 'P1');
+  assert.equal(pb.confidence, 'Low');
+  assert.equal(pb.brandOnly, false);
+  const bare = matchNotice(notice('Harbor Lane recalls sparkling water'), catalog).find((m) => m.productKey === 'P1');
+  assert.equal(bare.brandOnly, true);
 });

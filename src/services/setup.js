@@ -4,7 +4,7 @@ import { Queue } from '@forge/events';
 import { getWorkspaceId, ensureSchema, createObject, countObjects } from '../platform/assets.js';
 import { getSettings, saveSettings, getState, setState } from '../platform/settings.js';
 import { TYPE_ORDER } from '../lib/assets-schema.js';
-import { SAMPLE, SAMPLE_COMPANY } from '../lib/sample.js';
+import { SAMPLE, SAMPLE_COMPANY, sampleLoadDecision } from '../lib/sample.js';
 
 export const NO_ASSETS = 'Assets is not available on this site. RecallReady needs Jira Service Management with Assets.';
 const sampleQueue = new Queue({ key: 'rr-sample-load' });
@@ -22,15 +22,20 @@ export async function runSetup({ withSample }) {
   if (!workspaceId) return { ok: false, message: NO_ASSETS };
   const ids = await ensureSchema(workspaceId);
   await saveSettings({ schemaIds: ids });
-  if (withSample) await startSampleLoad();
-  return { ok: true, status: await catalogStatus(ids), sample: await getState('sample-progress') };
+  const started = withSample ? await startSampleLoad() : { ok: true };
+  return { ok: started.ok, message: started.message, status: await catalogStatus(ids), sample: await getState('sample-progress') };
 }
 
 export async function startSampleLoad() {
   const settings = await getSettings();
+  const map = (await getState('sample-map')) || {};
+  const status = await catalogStatus(settings.schemaIds);
+  const decision = sampleLoadDecision({ productCount: status.counts?.Product || 0, mapSize: Object.keys(map).length });
+  if (!decision.ok) return decision;
   if (!settings.company) await saveSettings({ company: SAMPLE_COMPANY });
   await setState('sample-progress', { status: 'queued', created: 0, total: SAMPLE_TOTAL, message: '', updatedAt: new Date().toISOString() });
   await sampleQueue.push({ body: { kind: 'load-sample' } });
+  return { ok: true };
 }
 
 // Runs every create with at most `limit` requests in flight.

@@ -1,7 +1,7 @@
 // Turns FDA enforcement reports, CPSC recalls and pasted text into one Notice shape that the
 // matcher understands. Pure functions.
 import { createHash } from 'crypto';
-import { extractGtins, extractLots, normalizeGtin, normalizeModel } from './ids.js';
+import { extractGtins, extractLots, extractModels, normalizeGtin, normalizeModel } from './ids.js';
 
 const clean = (value) => String(value || '').replace(/\s+/g, ' ').trim();
 const ymd = (value) => {
@@ -25,7 +25,7 @@ function finish(notice) {
     ...notice,
     gtins: unique([...(notice.gtins || []), ...extractGtins(allText)]),
     lots: unique([...(notice.lots || []), ...extractLots(allText)]),
-    models: unique((notice.models || []).map(normalizeModel)),
+    models: unique([...(notice.models || []), ...extractModels(allText)].map(normalizeModel)),
   };
 }
 
