@@ -39,6 +39,16 @@ export const SCHEMA_SPEC = {
 // Referenced types must exist before the types that point at them.
 export const TYPE_ORDER = ['Product', 'Location', 'Lot', 'Stock', 'Order'];
 
+// Assets global icons have workspace-specific ids, so each type's icon is found by name.
+export const TYPE_ICONS = { Product: 'Cardboard Box', Location: 'Shop', Lot: 'Marker', Stock: 'Stack', Order: 'Document' };
+
+export function typeIconId(icons, typeName) {
+  const list = icons || [];
+  const named = list.find((i) => i.name === TYPE_ICONS[typeName]);
+  const fallback = named || list.find((i) => i.name !== 'default') || list[0];
+  return fallback ? String(fallback.id) : '1';
+}
+
 export const DEFAULT_TYPE_IDS = { text: 0, integer: 1, date: 4, email: 8, select: 10 };
 
 // Assets attribute name -> catalog field, per object type. "Name" is each type's label.

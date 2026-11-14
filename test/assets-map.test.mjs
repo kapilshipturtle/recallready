@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SCHEMA_SPEC, mapAqlObjects, TYPE_ORDER } from '../src/lib/assets-schema.js';
+import { SCHEMA_SPEC, mapAqlObjects, TYPE_ORDER, typeIconId } from '../src/lib/assets-schema.js';
 
 const attrs = [
   { id: '1', name: 'Key' }, { id: '2', name: 'Name' }, { id: '3', name: 'Created' },
@@ -42,4 +42,17 @@ test('schema spec creates referenced types first and covers the catalog fields',
   assert.deepEqual(SCHEMA_SPEC.Lot.map((a) => a.name), ['Product', 'Best by']);
   assert.equal(SCHEMA_SPEC.Lot[0].ref, 'Product');
   assert.deepEqual(SCHEMA_SPEC.Location.find((a) => a.name === 'Type').options, ['Store', 'Warehouse', 'Online', 'Seller']);
+});
+
+test('object types get named global icons, with fallbacks', () => {
+  const icons = [{ id: 'u-default', name: 'default' }, { id: 'u-box', name: 'Cardboard Box' }, { id: 'u-shop', name: 'Shop' },
+    { id: 'u-stack', name: 'Stack' }, { id: 'u-doc', name: 'Document' }, { id: 'u-marker', name: 'Marker' }];
+  assert.equal(typeIconId(icons, 'Product'), 'u-box');
+  assert.equal(typeIconId(icons, 'Location'), 'u-shop');
+  assert.equal(typeIconId(icons, 'Lot'), 'u-marker');
+  assert.equal(typeIconId(icons, 'Stock'), 'u-stack');
+  assert.equal(typeIconId(icons, 'Order'), 'u-doc');
+  assert.equal(typeIconId([{ id: 'u-default', name: 'default' }, { id: 'u-gears', name: 'Gears' }], 'Product'), 'u-gears');
+  assert.equal(typeIconId([{ id: 'u-default', name: 'default' }], 'Product'), 'u-default');
+  assert.equal(typeIconId([], 'Product'), '1');
 });

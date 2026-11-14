@@ -2,7 +2,13 @@
 // admin, so it gets 403 there. Reading and creating objects in that schema works asApp.
 import api, { route } from '@forge/api';
 import { isMissingAssets } from '../lib/errors.js';
-import { SCHEMA_NAME, SCHEMA_KEY, SCHEMA_SPEC, TYPE_ORDER, DEFAULT_TYPE_IDS, mapAqlObjects } from '../lib/assets-schema.js';
+import { SCHEMA_NAME, SCHEMA_KEY, SCHEMA_SPEC, TYPE_ORDER, DEFAULT_TYPE_IDS, mapAqlObjects, typeIconId } from '../lib/assets-schema.js';
+
+// Optional calls fall back to a value, but a consent error must still reach Forge.
+const orElse = (fallback) => (error) => {
+  if (error && error.name === 'NEEDS_AUTHENTICATION_ERR') throw error;
+  return fallback;
+};
 
 export class AssetsError extends Error {
   constructor(status, body) {
@@ -54,17 +60,26 @@ export async function ensureSchema(workspaceId) {
   const schemaId = String(schema.id);
   const existing = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objectschema/${schemaId}/objecttypes`);
   const typeIds = Object.fromEntries((existing || []).map((t) => [t.name, String(t.id)]));
+  const typeIcons = Object.fromEntries((existing || []).map((t) => [t.name, String(t.icon?.id || '')]));
+  const icons = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/icon/global`).catch(orElse([]));
   const referenceTypes = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/config/referencetype`);
   const referenceType = (referenceTypes || []).find((r) => r.name === 'Reference') || (referenceTypes || [])[0];
 
   const types = {};
   for (const typeName of TYPE_ORDER) {
+    const iconId = typeIconId(icons, typeName);
     if (!typeIds[typeName]) {
       const created = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objecttype/create`, {
         method: 'POST',
-        body: JSON.stringify({ name: typeName, iconId: '1', objectSchemaId: schemaId }),
+        body: JSON.stringify({ name: typeName, iconId, objectSchemaId: schemaId }),
       });
       typeIds[typeName] = String(created.id);
+    } else if (iconId !== '1' && typeIcons[typeName] !== iconId) {
+      // Types made by an earlier version used an icon id that does not exist; give them a real one.
+      await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objecttype/${typeIds[typeName]}`, {
+        method: 'PUT',
+        body: JSON.stringify({ name: typeName, iconId, objectSchemaId: schemaId }),
+      }).catch(orElse(null));
     }
     const attributes = await call('user', route`/jsm/assets/workspace/${workspaceId}/v1/objecttype/${typeIds[typeName]}/attributes`);
     const attrIds = Object.fromEntries((attributes || []).map((a) => [a.name, String(a.id)]));
