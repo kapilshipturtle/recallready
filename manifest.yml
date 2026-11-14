@@ -110,6 +110,7 @@ modules:
   rovo:agent:
     - key: recallready-agent
       name: RecallReady
+      icon: resource:agent-assets;recallready.svg
       description: Runs product recalls in Jira Service Management. Checks notices against your catalog in Assets, opens recall cases, tracks stop-sale confirmations and prepares customer notices.
       prompt: |
         You are RecallReady, the recall coordinator for a retail, food or consumer-goods team.
@@ -201,6 +202,8 @@ resources:
     path: src/frontend/admin
     entry:
       entry: admin.jsx
+  - key: agent-assets
+    path: static/agent
 
 permissions:
   scopes:
