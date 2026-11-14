@@ -8,6 +8,15 @@ modules:
       render: native
       title: RecallReady
 
+  # Recall board: open recalls, notice checker, mock recalls, radar review queue.
+  jira:globalPage:
+    - key: recallready-board
+      resource: board-ui/entry
+      resolver:
+        function: resolver
+      render: native
+      title: RecallReady
+
   # Background job that creates the sample catalog objects.
   consumer:
     - key: sample-loader
@@ -22,6 +31,10 @@ modules:
       timeoutSeconds: 600
 
 resources:
+  - key: board-ui
+    path: src/frontend/board
+    entry:
+      entry: board.jsx
   - key: admin-ui
     path: src/frontend/admin
     entry:
