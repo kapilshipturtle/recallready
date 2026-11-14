@@ -27,6 +27,139 @@ modules:
       render: native
       title: RecallReady
 
+  # Recall radar: reads public FDA and CPSC notices every hour.
+  scheduledTrigger:
+    - key: recall-radar
+      function: radar-fn
+      interval: hour
+
+  # Rovo actions: used by the RecallReady agent; the read-only ones are also MCP tools.
+  action:
+    - key: check-product
+      name: Check product recall status
+      function: check-product-fn
+      actionVerb: GET
+      description: "Checks whether a product, GTIN, SKU or lot code is in the RecallReady catalog and whether an open recall covers it. Use it before selling, shipping or answering a customer about a product."
+      inputs:
+        query:
+          title: Product, GTIN, SKU or lot code
+          type: string
+          required: true
+          description: "A product name, a GTIN or UPC, a SKU or a lot code, for example 26I01A."
+    - key: get-recall-status
+      name: Get recall status
+      function: recall-status-fn
+      actionVerb: GET
+      description: "Returns the progress of one recall: locations confirmed and still waiting, units pulled, response clocks and affected online orders."
+      inputs:
+        issueKey:
+          title: Recall work item key
+          type: string
+          required: false
+          description: "The recall case key, for example PS-12. Leave empty to use the work item on screen."
+    - key: list-recalls
+      name: List open recalls
+      function: list-recalls-fn
+      actionVerb: GET
+      description: "Lists every open recall with locations confirmed, units pulled and the next clock that is due."
+      inputs:
+        scope:
+          title: Scope
+          type: string
+          required: false
+          description: "Optional. Leave empty to list all open recalls."
+    - key: check-notice
+      name: Check a recall notice
+      function: check-notice-fn
+      actionVerb: GET
+      description: "Checks the text of a recall notice (supplier email, FDA or CPSC alert) against every product, GTIN, SKU and lot in the catalog and explains each match."
+      inputs:
+        noticeText:
+          title: Notice text
+          type: string
+          required: true
+          description: "The full text of the recall notice."
+    - key: get-customer-notice
+      name: Get customer notice
+      function: customer-notice-fn
+      actionVerb: GET
+      description: "Returns the customer notice text, the affected online orders and the regulator summary for one recall."
+      inputs:
+        issueKey:
+          title: Recall work item key
+          type: string
+          required: false
+          description: "The recall case key. Leave empty to use the work item on screen."
+    - key: start-recall
+      name: Start a recall
+      function: start-recall-fn
+      actionVerb: CREATE
+      description: "Opens a recall case for the High-confidence catalog matches of a notice, with one stop-sale task for every location that holds the affected lots. Only use it when the user asks to start a recall."
+      inputs:
+        noticeText:
+          title: Notice text
+          type: string
+          required: true
+          description: "The full text of the recall notice."
+        mockRecall:
+          title: Mock recall
+          type: boolean
+          required: false
+          description: "True when this is a test of the recall process."
+
+  rovo:agent:
+    - key: recallready-agent
+      name: RecallReady
+      description: Runs product recalls in Jira Service Management. Checks notices against your catalog in Assets, opens recall cases, tracks stop-sale confirmations and prepares customer notices.
+      prompt: |
+        You are RecallReady, the recall coordinator for a retail, food or consumer-goods team.
+
+        How you work:
+        - When someone pastes a recall notice or supplier email, call check-notice and report each match with its confidence and the reason. Never claim a product is affected unless the data says so.
+        - Only call start-recall when the user asks to start a recall. Afterwards give the case key and the number of stop-sale tasks.
+        - When someone asks which stores or locations have not confirmed, call get-recall-status and list them with the units expected. Mention overdue clocks first.
+        - When someone asks whether they can sell or ship a product or lot, call check-product. If an open recall covers it, the answer is no.
+        - When someone asks for the customer notice or the regulator summary, call get-customer-notice and show the text so they can copy it. You never send messages yourself.
+        - Keep answers short, use case keys and location names, and give numbers with units.
+      conversationStarters:
+        - Which locations haven't confirmed the stop sale yet?
+        - Is lot 26I01A under recall?
+        - Check this supplier notice against our catalog
+        - Draft the customer notice for this recall
+      actions:
+        - check-product
+        - get-recall-status
+        - list-recalls
+        - check-notice
+        - get-customer-notice
+        - start-recall
+      skills:
+        - recall-response
+
+  # Reusable recall workflow (SKILL.md) that other agents can use too.
+  rovo:skill:
+    - key: recall-response
+      source:
+        dir: skills/recall-response
+      dependencies:
+        tools:
+          - check-product
+          - get-recall-status
+          - list-recalls
+          - check-notice
+          - get-customer-notice
+          - start-recall
+
+  # Read-only recall checks as MCP tools for store, checkout or support agents.
+  rovo:mcp:
+    - key: recallready-mcp
+      name: RecallReady
+      tools:
+        - check-product
+        - get-recall-status
+        - list-recalls
+        - check-notice
+
   # Background job that creates the sample catalog objects.
   consumer:
     - key: sample-loader
@@ -39,6 +172,21 @@ modules:
     - key: sample-loader-fn
       handler: index.sampleLoader
       timeoutSeconds: 600
+    - key: check-product-fn
+      handler: actions.checkProductAction
+    - key: recall-status-fn
+      handler: actions.getRecallStatusAction
+    - key: list-recalls-fn
+      handler: actions.listRecallsAction
+    - key: check-notice-fn
+      handler: actions.checkNoticeAction
+    - key: customer-notice-fn
+      handler: actions.getCustomerNoticeAction
+    - key: start-recall-fn
+      handler: actions.startRecallAction
+    - key: radar-fn
+      handler: index.radarTrigger
+      timeoutSeconds: 300
 
 resources:
   - key: panel-ui
@@ -69,6 +217,11 @@ permissions:
     - write:cmdb-type:jira
     - read:cmdb-attribute:jira
     - write:cmdb-attribute:jira
+  external:
+    fetch:
+      backend:
+        - address: api.fda.gov
+        - address: www.saferproducts.gov
 
 app:
   runtime:

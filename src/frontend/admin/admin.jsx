@@ -55,7 +55,7 @@ const App = () => {
 
   const act = async (label, fn, payload) => {
     setBusy(label);
-    setBusyArea(label === 'save' ? 'save' : 'catalog');
+    setBusyArea(label === 'save' ? 'save' : label === 'scan' ? 'scan' : 'catalog');
     setMessage(null);
     const result = await invoke(fn, payload);
     setBusy('');
@@ -150,6 +150,9 @@ const App = () => {
             onChange={(event) => setDraft({ ...draft, sources: { ...draft.sources, [s.key]: Boolean(event.target.checked) } })}
           />
         ))}
+        <Box><Button isDisabled={Boolean(busy)} onClick={() => act('scan', 'scanNow')}>{busy === 'scan' ? 'Scanning...' : 'Scan now'}</Button></Box>
+        {message && busyArea === 'scan' && <SectionMessage appearance={message.appearance}><Text>{message.text}</Text></SectionMessage>}
+        {state.radar?.errors?.length > 0 && <SectionMessage appearance="warning" title="Some sources could not be read"><Text>{state.radar.errors.join(' ')}</Text></SectionMessage>}
         {state.radar && <Text>Last scan: {String(state.radar.at || '').slice(0, 16).replace('T', ' ')} UTC. Checked {state.radar.checked} notices, opened {state.radar.opened} cases, {state.radar.queued} for review.</Text>}
       </Stack>
 

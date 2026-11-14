@@ -5,6 +5,7 @@ import { listProjects } from '../platform/jira.js';
 import { getSettings, saveSettings, getState } from '../platform/settings.js';
 import { runSetup, startSampleLoad, catalogStatus, NO_ASSETS } from '../services/setup.js';
 import { DEFAULT_PLAN } from '../lib/case.js';
+import { runScan } from '../services/radar.js';
 import { resultFromError } from '../lib/errors.js';
 
 async function isJiraAdmin() {
@@ -90,6 +91,15 @@ export function defineAdmin(resolver) {
       const sources = Object.fromEntries(['fdaFood', 'fdaDrug', 'fdaDevice', 'cpsc'].map((k) => [k, Boolean(payload?.sources?.[k])]));
       const saved = await saveSettings({ projectKey, company: String(payload?.company || '').slice(0, 80), plan, sources });
       return { ok: true, settings: { projectKey: saved.projectKey, company: saved.company, plan: saved.plan, sources: saved.sources } };
+    } catch (error) {
+      return fail(error);
+    }
+  });
+
+  resolver.define('scanNow', async () => {
+    try {
+      await requireAdmin();
+      return { ok: true, radar: await runScan({ who: 'user' }) };
     } catch (error) {
       return fail(error);
     }

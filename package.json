@@ -4,6 +4,7 @@
   "private": true,
   "description": "RecallReady: product recall command center for Jira Service Management and Assets (Forge app).",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "test": "node --test \"test/**/*.test.mjs\""
   },

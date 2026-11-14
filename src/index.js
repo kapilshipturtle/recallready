@@ -11,3 +11,4 @@ definePanel(resolver);
 
 export const handler = resolver.getDefinitions();
 export { sampleLoader } from './consumers.js';
+export { radarTrigger } from './triggers.js';
