@@ -10,7 +10,7 @@ When a supplier or a regulator recalls a product, a retailer or food business ha
 | Recall panel (on the case) | Stop-sale progress per location, response plan clocks, online orders with affected lots, a customer notice and a regulator summary ready to copy, and Close with a closing record |
 | Recall panel (on each stop-sale task) | The location manager confirms how many units were pulled, with an optional note |
 | Settings (Jira admin page) | Create the catalog in Assets (optionally with a fictional sample retailer), choose the project for recall cases, set the company name, the response plan hours and the radar sources |
-| Recall radar (every hour) | Reads new FDA enforcement reports (food, drug, device) and CPSC recalls and checks them against the catalog |
+| Recall radar (every hour) | Reads the last 30 days of FDA enforcement reports (food, drug, device) and CPSC recalls and checks them against the catalog; opens a case on a High match, sends the rest to review |
 | Rovo agent "RecallReady" | Checks notices, opens recalls, reports who has not confirmed, answers "can we still sell this lot?", drafts the customer notice |
 | Rovo skill "recall-response" | The recall workflow as reusable instructions for any Rovo agent |
 
@@ -18,7 +18,7 @@ When a supplier or a regulator recalls a product, a retailer or food business ha
 
 1. A notice arrives: pasted on the board, given to the Rovo agent, found by the hourly radar, or started as a mock recall.
 2. RecallReady matches it against the catalog and shows why each product matched.
-3. Starting the recall creates one case work item and one stop-sale sub-task per location that holds affected stock, with the units to pull per lot.
+3. Starting the recall creates one case work item and one stop-sale sub-task per location that holds affected stock, with the units to pull per lot. Several products from one notice go into one case, and a lot that is already under an open recall is not opened twice.
 4. Each location manager confirms the units pulled on their task. When the last location confirms, the stop-sale clock is met.
 5. The case panel shows the affected online orders, a customer notice and a regulator summary to copy into your own tools. RecallReady never sends anything to customers or regulators itself.
 6. When every location has confirmed, the case closes with a closing record: units recovered against units expected (effectiveness), every clock and a timeline.
@@ -29,11 +29,11 @@ Every match carries its evidence, for example "GTIN 02000000000237 appears in th
 
 | Confidence | Rule | What happens |
 |---|---|---|
-| High | A GTIN on the notice equals the product GTIN; or a model number equals the product SKU; or the brand is named, at least 60% of the product name's words appear and one of the product's lot codes is listed | The board offers Start recall first; the radar opens the case by itself |
-| Medium | The brand is named and at least 60% of the product name's words appear | Shown for review; never opened by itself |
-| Low | Only the brand is named | Collapsed under "Show brand-only matches"; never opened by itself |
+| High | A GTIN on the notice equals the product GTIN; or the brand is named and a model number equals the product SKU; or the brand is named, at least 60% of the product name's words appear and one of the product's lot codes is listed | Ticked on the board for one recall; the radar opens the case by itself |
+| Medium | The brand is named and at least 60% of the product name's words appear; or a GTIN or model matches but the brand is missing, or the notice lists lots and none of them is ours | Shown for review; never opened by itself |
+| Low | The brand is named but fewer of the product name's words appear | Shown for review; matches with no product word at all are folded under "Show brand-only matches" |
 
-GTINs are read even when printed with spaces or dashes and are checked with the GS1 check digit. Lot codes are read after "lot", "lots", "batch" or "batches", and dates are not mistaken for lots.
+GTINs are read even when printed with spaces or dashes and are checked with the GS1 check digit. Lot codes are read after "lot", "lots", "batch" or "batches", model numbers after "model", "item" or "SKU", and dates are not mistaken for lots.
 
 ## Response plan
 
@@ -48,7 +48,7 @@ Each case shows four clocks, counted from the moment the recall opens. They are 
 
 ## Mock recalls
 
-Food-safety schemes expect the recall procedure to be tested; the SQF Code, for example, requires the withdrawal and recall procedure to be reviewed and tested at least once a year. A mock recall runs the real process on a product and lots you choose. It is labelled "Mock recall" everywhere, its customer notice starts with "Mock recall test: do not send this notice to customers." and its regulator summary is marked "not for submission".
+Food-safety schemes expect the recall procedure to be tested; the SQF Code, for example, requires the withdrawal and recall procedure to be reviewed and tested at least once a year. A mock recall runs the real process on a product and lots you choose. Each location gets a task to find and count the units, not to take them off sale. It is labelled "Mock recall" everywhere, its customer notice starts with "Mock recall test: do not send this notice to customers.", its regulator summary is marked "not for submission", and asking "can we still sell this lot?" never answers no because of a test.
 
 ## Catalog in Assets
 
@@ -93,9 +93,11 @@ You need a Jira site with Jira Service Management and Assets, and a Jira admin a
 - Atlassian Forge app on the Node 24 runtime, with UI Kit for the board, the panel and the settings page.
 - Jira calls from the board, the panel and the agent run as the current user. The hourly radar has no user, so it runs as the app.
 - Creating the Assets schema runs as the admin who sets it up. Reading the catalog and creating sample objects run as the app.
-- Each stop-sale confirmation is stored on its own sub-task and merged when the case is read, so two managers confirming at the same moment never overwrite each other.
-- The sample catalog is created by a Forge queue consumer that reports progress, because 435 objects take longer than a page request may run.
-- Pure logic (identifier parsing, notice adapters, matching, the case model, clocks, the radar plan) lives in `src/lib` and is covered by Node's built-in test runner: `npm test` runs 66 tests.
+- Each stop-sale confirmation is stored on its own sub-task and merged when the case is read, so two managers confirming at the same moment never overwrite each other. A closed case is frozen as it was closed.
+- Stop-sale sub-tasks are created in bulk (50 per call), each with its own work item property. The case property stays small: the list of online orders is read from Assets when it is needed.
+- "Can we still sell this?" reads every open recall case in the site and never gives an all-clear it could not check.
+- The radar claims each notice before it opens a case, so two scans can never open the same case twice. Scan now and the sample catalog load run in a Forge queue consumer that reports progress.
+- Pure logic (identifier parsing, notice adapters, matching, catalog lookup, the case model, clocks, the radar plan, answers) lives in `src/lib` and is covered by Node's built-in test runner: `npm test` runs 91 tests.
 
 ```
 src/
