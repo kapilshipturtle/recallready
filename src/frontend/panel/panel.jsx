@@ -133,9 +133,9 @@ function LocationView({ state, act, busy }) {
       )}
       {state.closed ? <SectionMessage appearance="information"><Text>This recall is closed, so the confirmation can no longer change.</Text></SectionMessage> : (<>
       <Label labelFor="units">{state.drill ? 'Units found' : 'Units pulled'}</Label>
-      <Box xcss={numberStyle}><Textfield id="units" type="number" value={units} onChange={(e) => setUnits(e.target.value)} /></Box>
+      <Box xcss={numberStyle}><Textfield id="units" type="number" defaultValue={units} onChange={(e) => setUnits(e.target.value)} /></Box>
       <Label labelFor="note">Note (optional)</Label>
-      <TextArea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Example: 2 units found in the back room" />
+      <TextArea id="note" defaultValue={note} onChange={(e) => setNote(e.target.value)} placeholder="Example: 2 units found in the back room" />
       <Box>
         <Button appearance="primary" isDisabled={Boolean(busy) || units === ''} onClick={() => act('confirmHere', { units: Number(units), note })}>
           {busy === 'confirmHere' ? 'Saving...' : l.confirmedUnits !== null ? 'Update confirmation' : state.drill ? 'Confirm count' : 'Confirm stop sale'}

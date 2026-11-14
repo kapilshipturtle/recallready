@@ -142,7 +142,7 @@ const App = () => {
           placeholder="Choose a project"
         />
         <Label labelFor="company">Company name used in customer notices</Label>
-        <Textfield id="company" value={draft.company} onChange={(event) => setDraft({ ...draft, company: event.target.value })} />
+        <Textfield id="company" defaultValue={draft.company} onChange={(event) => setDraft({ ...draft, company: event.target.value })} />
       </Stack>
 
       <Stack space="space.150">
@@ -154,7 +154,7 @@ const App = () => {
               <Textfield
                 id={`plan-${step.key}`}
                 type="number"
-                value={String(step.hours)}
+                defaultValue={String(step.hours)}
                 onChange={(event) => setDraft({ ...draft, plan: draft.plan.map((p) => (p.key === step.key ? { ...p, hours: event.target.value } : p)) })}
               />
             </Box>
