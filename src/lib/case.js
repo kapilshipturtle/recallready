@@ -161,3 +161,30 @@ export function regulatorSummary(caseData) {
     `Case opened: ${timeText(caseData.startedAt)}`,
   ].filter(Boolean).join('\n');
 }
+
+// Applies confirmations stored on stop-sale sub-tasks, oldest first. Unknown locations and
+// invalid unit counts are skipped so one bad record cannot hide the rest.
+export function applyConfirmations(caseData, confirmations) {
+  const ordered = [...(confirmations || [])].sort((a, b) => String(a.at).localeCompare(String(b.at)));
+  let next = caseData;
+  for (const confirmation of ordered) {
+    try {
+      next = confirmLocation(next, confirmation);
+    } catch {
+      // skipped on purpose
+    }
+  }
+  return next;
+}
+
+const lotsText = (codes) => `${codes.length === 1 ? 'lot' : 'lots'} ${codes.join(', ')}`;
+
+export function caseTitle(caseData) {
+  const names = caseData.products.map((p) => p.name).join(', ');
+  return `${caseData.drill ? 'Mock recall' : 'Recall'}: ${names} (${lotsText(caseData.lots.map((l) => l.code))})`.slice(0, 250);
+}
+
+export function stopSaleTitle(location) {
+  const codes = [...new Set((location.lotUnits || []).map((l) => l.code))];
+  return `Stop sale: pull ${location.expectedUnits} units of ${lotsText(codes)} at ${location.name}`.slice(0, 250);
+}
