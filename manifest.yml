@@ -8,6 +8,16 @@ modules:
       render: native
       title: RecallReady
 
+  # Recall command on case work items; confirmation form on stop-sale tasks.
+  jira:issuePanel:
+    - key: recallready-panel
+      resource: panel-ui/entry
+      resolver:
+        function: resolver
+      render: native
+      title: RecallReady
+      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+
   # Recall board: open recalls, notice checker, mock recalls, radar review queue.
   jira:globalPage:
     - key: recallready-board
@@ -31,6 +41,10 @@ modules:
       timeoutSeconds: 600
 
 resources:
+  - key: panel-ui
+    path: src/frontend/panel
+    entry:
+      entry: panel.jsx
   - key: board-ui
     path: src/frontend/board
     entry:
